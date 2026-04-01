@@ -1,0 +1,14 @@
+{
+  "id": "day2",
+  "number": 2,
+  "title": "Day 2 \u2014 Memory, Context & Single-Agent Mastery",
+  "banner_color": "#14b8a6",
+  "banner_label": "Day 2 \u00b7 3 Sessions",
+  "banner_title": "Memory, Context &amp; Single-Agent Mastery",
+  "banner_sub": "Managing state, knowledge, and context across long-running agent sessions",
+  "sessions": [
+    {"id": "s21", "number": "2.1", "title": "Memory Architecture", "file": "session-2-1.md"},
+    {"id": "s22", "number": "2.2", "title": "Context Management", "file": "session-2-2.md"},
+    {"id": "s23", "number": "2.3", "title": "Production Agents", "file": "session-2-3.md"}
+  ]
+}

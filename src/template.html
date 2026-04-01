@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agentic AI for Developers — 3-Day Intensive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/></noscript>
+<style>
+{{STYLES}}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+<button id="hamburger" aria-label="Menu" onclick="toggleSidebar()">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">{{SIDEBAR_LOGO}}</div>
+    <div class="sidebar-title">{{SIDEBAR_TITLE}}</div>
+    <div class="sidebar-meta">{{SIDEBAR_META}}</div>
+  </div>
+
+  <div class="sidebar-nav" id="sidebarNav">
+{{SIDEBAR_NAV}}
+  </div><!-- /sidebar-nav -->
+
+  <div class="sidebar-footer">
+{{SIDEBAR_FOOTER}}
+  </div>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main id="main">
+
+{{MAIN_CONTENT}}
+
+</main><!-- /main -->
+
+<script>
+{{SCRIPTS}}
+</script>
+</body>
+</html>
