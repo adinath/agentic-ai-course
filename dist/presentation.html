@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agentic AI for Developers — Tutor Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #0a0e1a;
+  --bg2:     #0f1524;
+  --surface: #1a2340;
+  --border:  #2a3a5c;
+  --blue:    #3b82f6;
+  --cyan:    #22d3ee;
+  --teal:    #14b8a6;
+  --green:   #10b981;
+  --amber:   #f59e0b;
+  --rose:    #f43f5e;
+  --purple:  #8b5cf6;
+  --text:    #e2e8f0;
+  --text2:   #94a3b8;
+  --text3:   #64748b;
+  --white:   #ffffff;
+  --d1:      #3b82f6;
+  --d2:      #14b8a6;
+  --d3:      #8b5cf6;
+  --ff-disp: 'DM Serif Display', Georgia, serif;
+  --ff-body: 'Outfit', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+}
+
+/* ── DECK ── */
+#deck {
+  width: 100%; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 48px 72px;
+  opacity: 0; pointer-events: none;
+  transform: translateX(40px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.slide.active {
+  opacity: 1; pointer-events: all;
+  transform: translateX(0);
+}
+.slide.exit {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-40px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+/* ── SLIDE TYPES ── */
+
+/* Cover */
+.slide-cover {
+  background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(59,130,246,.12) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 80% at 20% 80%, rgba(34,211,238,.07) 0%, transparent 70%),
+              var(--bg);
+  text-align: center;
+}
+
+/* Day break */
+.slide-day {
+  text-align: center;
+}
+
+/* Standard */
+.slide-content {
+  align-items: flex-start;
+}
+
+/* ── CHROME ── */
+#chrome {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 100;
+}
+
+#progress-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+
+#slide-counter {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+#day-indicator {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--surface);
+  transition: color .3s, background .3s;
+}
+
+.nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 14px;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.nav-btn:hover { background: var(--border); color: var(--white); }
+
+/* ── TYPOGRAPHY ── */
+.eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: .7;
+}
+
+.slide-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 28px;
+}
+.slide-title em { font-style: italic; }
+
+.cover-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.cover-title em { color: var(--cyan); font-style: italic; }
+
+.day-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+
+.cover-sub {
+  font-size: 1.1rem;
+  color: var(--text2);
+  margin-bottom: 36px;
+  max-width: 540px;
+}
+
+/* ── PILLS ROW ── */
+.pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 20px;
+}
+.pill {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+/* ── BULLET LIST ── */
+.bullets {
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+}
+.bullets li {
+  display: flex; align-items: flex-start;
+  gap: 12px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.bullet-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.bullets li strong { color: var(--white); }
+.bullets li span { color: var(--text2); }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 780px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: 100%; max-width: 820px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; width: 100%; max-width: 860px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.card-num {
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  margin-bottom: 6px;
+}
+.card-title {
+  font-size: .88rem; font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--white);
+}
+.card p {
+  font-size: .8rem; color: var(--text2);
+  line-height: 1.55;
+}
+.card .tag {
+  font-family: var(--ff-mono);
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  display: inline-block; padding: 2px 7px;
+  border-radius: 3px; margin-bottom: 8px;
+}
+
+/* ── COMPARE ── */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 760px; }
+.compare-col { border-radius: 10px; overflow: hidden; }
+.compare-head { padding: 10px 14px; font-size: .78rem; font-weight: 600; }
+.compare-body { padding: 14px; font-size: .85rem; color: var(--text2); line-height: 1.6; }
+.compare-body code {
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  display: block;
+  background: rgba(255,255,255,.05);
+  padding: 8px 10px; border-radius: 6px;
+  margin-bottom: 8px; color: var(--text);
+}
+
+/* ── DIAGRAM BOX ── */
+.diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  line-height: 1.6;
+  color: var(--text2);
+  width: 100%; max-width: 700px;
+  white-space: pre;
+}
+
+/* ── TABLE ── */
+.ref-table { width: 100%; max-width: 740px; border-collapse: collapse; }
+.ref-table th {
+  text-align: left; padding: 8px 14px;
+  font-family: var(--ff-mono); font-size: .72rem;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.ref-table td {
+  padding: 9px 14px;
+  font-size: .85rem; color: var(--text2);
+  border-bottom: 1px solid rgba(42,58,92,.5);
+  line-height: 1.5;
+}
+.ref-table td:first-child { color: var(--white); font-weight: 500; }
+.ref-table tr:last-child td { border-bottom: none; }
+
+/* ── CALLOUT ── */
+.callout {
+  border-radius: 10px;
+  padding: 14px 18px;
+  border-left: 3px solid;
+  background: var(--surface);
+  width: 100%; max-width: 700px;
+  margin-top: 4px;
+}
+.callout-title {
+  font-family: var(--ff-mono);
+  font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 6px;
+}
+.callout p { font-size: .88rem; color: var(--text2); line-height: 1.6; }
+
+/* ── LOOP FLOW ── */
+.loop-flow {
+  display: flex; align-items: center;
+  flex-wrap: wrap; gap: 6px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%; max-width: 700px;
+}
+.loop-node {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .8rem; font-weight: 600;
+  white-space: nowrap;
+}
+.loop-arrow { color: var(--text3); font-size: .9rem; }
+.loop-note {
+  width: 100%; margin-top: 10px;
+  font-size: .78rem; color: var(--text3);
+  font-style: italic;
+}
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: flex; gap: 24px;
+  margin-top: 8px;
+}
+.stat { text-align: center; }
+.stat-val {
+  font-family: var(--ff-disp);
+  font-size: 2.2rem;
+  color: var(--cyan);
+  line-height: 1;
+}
+.stat-lbl {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-top: 4px;
+}
+
+/* ── TOPOLOGY GRID ── */
+.topo-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; width: 100%; max-width: 820px;
+}
+.topo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.topo-name {
+  font-weight: 600; font-size: .85rem;
+  color: var(--white); margin-bottom: 4px;
+}
+.topo-use {
+  font-size: .76rem; color: var(--text2);
+  line-height: 1.5;
+}
+.topo-pattern {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  margin-top: 6px; white-space: pre-line;
+}
+
+/* ── D1 / D2 / D3 accents ── */
+.d1 { color: var(--d1); }
+.d2 { color: var(--d2); }
+.d3 { color: var(--d3); }
+.bg-d1 { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); }
+.bg-d2 { background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.3); }
+.bg-d3 { background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.3); }
+.border-d1 { border-color: var(--d1); }
+.border-d2 { border-color: var(--d2); }
+.border-d3 { border-color: var(--d3); }
+
+/* ── KEYBOARD HINT ── */
+#key-hint {
+  position: fixed; bottom: 64px; right: 24px;
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 6px;
+  opacity: 1;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+#key-hint.hidden { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- ─────────── 00 COVER ─────────── -->
+<div class="slide slide-cover" data-day="0">
+  <p class="eyebrow" style="color:var(--cyan)">3-Day Intensive Course</p>
+  <h1 class="cover-title">Agentic AI<br/>for <em>Developers</em></h1>
+  <p class="cover-sub">From LLM completions to production-grade multi-agent systems.</p>
+  <div class="stat-strip">
+    <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">Days</div></div>
+    <div class="stat"><div class="stat-val">9</div><div class="stat-lbl">Sessions</div></div>
+    <div class="stat"><div class="stat-val">6</div><div class="stat-lbl">Topologies</div></div>
+    <div class="stat"><div class="stat-val">5</div><div class="stat-lbl">Sens-AI Habits</div></div>
+  </div>
+</div>
+
+<!-- ─────────── DAY 1 BREAK ─────────── -->
+<div class="slide slide-day" data-day="1">
+  <p class="eyebrow d1">Day One</p>
+  <h2 class="day-title">LLM Based Agents</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:480px;">From stateless completions to autonomous reasoning loops — agent fundamentals, frameworks, tools, ReAct, planning, and RAG.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">What is an Agent?</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">LangGraph</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">Ollama</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">ReAct</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">Plan & Execute</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">RAG + Ragas</span>
+  </div>
+</div>
+
+<!-- ─────────── 1.1a WHAT IS AN AGENT ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1</p>
+  <h2 class="slide-title">LLM vs Agent</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.25);">
+      <div class="compare-head" style="background:rgba(244,63,94,.12);color:var(--rose)">LLM (completion)</div>
+      <div class="compare-body">
+        <code>Input → Model → Output</code>
+        Stateless. One shot. Forgets everything. You send a prompt, it generates text.
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--d1)">Agent</div>
+      <div class="compare-body">
+        <code>Perceive → Reason → Act → Observe → ↻</code>
+        Stateful loop. Has tools. Accumulates context. Decides what to do next.
+      </div>
+    </div>
+  </div>
+  <div class="callout border-d1" style="margin-top:16px;">
+    <div class="callout-title d1">The PRAO Loop</div>
+    <p><strong style="color:var(--white)">P</strong>erception → <strong style="color:var(--white)">R</strong>easoning → <strong style="color:var(--white)">A</strong>ction → <strong style="color:var(--white)">O</strong>bservation — the agent repeats this until done or stopped.</p>
+  </div>
+</div>
+
+<!-- ─────────── 1.1b AGENT TYPES ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1</p>
+  <h2 class="slide-title">Four Agent Tiers</h2>
+  <div class="grid-2" style="max-width:760px;">
+    <div class="card">
+      <div class="tag" style="background:rgba(59,130,246,.15);color:var(--d1)">Tier 1</div>
+      <div class="card-title">Reactive</div>
+      <p>Input → Model → Output. No tools, no memory. Fast, deterministic. <em>Copilot inline completion.</em></p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--teal)">Tier 2</div>
+      <div class="card-title">Tool-Using (ReAct)</div>
+      <p>Reasoning trace + tool calls + observation loop. Fits in one context window. <em>Claude Code, single task.</em></p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">Tier 3</div>
+      <div class="card-title">Planning</div>
+      <p>Generates a plan before acting. Replans on failure. Multi-step with dependencies. <em>Devin-style agents.</em></p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">Tier 4</div>
+      <div class="card-title">Multi-Agent</div>
+      <p>Coordinated specialists. Parallel subtasks. Exceeds single context window. <em>Only when Tier 3 isn't enough.</em></p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 1.2a FRAMEWORKS ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">Framework Landscape</h2>
+  <table class="ref-table">
+    <thead><tr><th>Framework</th><th>Strength</th><th>Use When</th></tr></thead>
+    <tbody>
+      <tr><td>LangGraph ★</td><td>Explicit state graphs, checkpoints, HITL</td><td>Production agents needing control flow</td></tr>
+      <tr><td>CrewAI</td><td>Declarative role-based teams</td><td>Quick prototypes, role-driven workflows</td></tr>
+      <tr><td>AutoGen</td><td>Multi-agent natural language turns</td><td>Research, debate, collaborative tasks</td></tr>
+      <tr><td>Custom loop</td><td>Maximum control, zero overhead</td><td>Unusual architectures, learning</td></tr>
+    </tbody>
+  </table>
+  <div class="pills" style="margin-top:20px;">
+    <span class="pill d1" style="border-color:rgba(59,130,246,.4)">Hosted: Claude API</span>
+    <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.4)">Local: Ollama (llama3.2, qwen2.5-coder)</span>
+  </div>
+</div>
+
+<!-- ─────────── 1.2b TOOL DESIGN ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">Tool Design Principles</h2>
+  <ul class="bullets" style="max-width:720px;">
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Precise names</strong> <span>— <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;">query_database</code> not <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;">query</code>. The name is the model's primary routing signal.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Docstring as contract</strong> <span>— describe what it does, each arg, what it returns, and hard constraints.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Structured returns</strong> <span>— return dicts, not raw strings. The model reasons about structure better than prose.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Validate up front</strong> <span>— reject bad input immediately with a clear message. The model will read it and self-correct.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--rose)"></div><div><strong>Scope constraints</strong> <span>— never give an agent more access than it needs. Least privilege applies.</span></div></li>
+  </ul>
+</div>
+
+<!-- ─────────── 1.2c REACT ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">ReAct Agent</h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">User message</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">LLM reasons</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(20,184,166,.15);color:var(--teal)">Tool call</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(245,158,11,.15);color:var(--amber)">Observation</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">LLM reasons</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(16,185,129,.15);color:var(--green)">Final answer</span>
+    <div class="loop-note">Repeat until no tool calls (end_turn) or MAX_ITERATIONS reached.</div>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">Max Iterations</div>
+      <p>Always set a hard cap (e.g. 15). Without it, the agent loops forever when stuck. Track <code style="font-size:.8em;font-family:var(--ff-mono);">iteration_count</code> in state.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--rose)">Error Classes</div>
+      <p><strong style="color:var(--white)">Hallucinated tool</strong> — explain & list valid names.<br/><strong style="color:var(--white)">Policy block</strong> — block, do not retry.<br/><strong style="color:var(--white)">Transient error</strong> — explain, let agent retry.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 1.3a PLAN & EXECUTE ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3</p>
+  <h2 class="slide-title">Plan & Execute</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--d1)">ReAct</div>
+      <div class="compare-body">Figures out the next step only after seeing the previous result. Reactive. Good for exploratory tasks.</div>
+    </div>
+    <div class="compare-col" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.25);">
+      <div class="compare-head" style="background:rgba(139,92,246,.12);color:var(--purple)">Plan & Execute</div>
+      <div class="compare-body">Generates full plan before first action. Replans on failure. Separates strategic thinking from execution.</div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--purple);margin-top:16px;">
+    <div class="callout-title" style="color:var(--purple)">The split</div>
+    <p><strong style="color:var(--white)">Planner</strong> (claude-sonnet, called once) → decomposes into 3–7 steps.<br/><strong style="color:var(--white)">Executor</strong> (claude-haiku + tools, called per step) → mini ReAct loop per step.<br/><strong style="color:var(--white)">Replanner</strong> → triggered on step failure, generates new plan from that point.</p>
+  </div>
+</div>
+
+<!-- ─────────── 1.3b RAG ─────────── -->
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3</p>
+  <h2 class="slide-title">RAG for Agents</h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">Query</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">Embed</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(20,184,166,.15);color:var(--teal)">Vector search</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(245,158,11,.15);color:var(--amber)">Top-K chunks</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(16,185,129,.15);color:var(--green)">Inject → LLM</span>
+    <div class="loop-note">In agents: retrieval is a tool — the agent decides when to call it, what to search, and how many results.</div>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Knowledge Graph</div>
+      <p>Stores entities + relationships. Enables structured traversal queries. Complements vector search where relationships matter.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan)">Ragas Evaluation</div>
+      <p><strong style="color:var(--white)">Faithfulness</strong> — hallucination detection.<br/><strong style="color:var(--white)">Context Precision</strong> — retrieval relevance.<br/><strong style="color:var(--white)">Context Recall</strong> — retrieval completeness.<br/><strong style="color:var(--white)">Answer Relevancy</strong> — response quality.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── DAY 2 BREAK ─────────── -->
+<div class="slide slide-day" data-day="2">
+  <p class="eyebrow d2">Day Two</p>
+  <h2 class="day-title">Single Agent Mastery</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:480px;">AI-First development mindset, Sens-AI habits, MCP, context engineering, four memory types, observability, and guardrails.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">Sens-AI Framework</span>
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">MCP</span>
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">Context Engineering</span>
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">4 Memory Types</span>
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">Langfuse</span>
+    <span class="pill" style="color:var(--d2);border-color:rgba(20,184,166,.4)">Guardrails</span>
+  </div>
+</div>
+
+<!-- ─────────── 2.1a AIFSD ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1</p>
+  <h2 class="slide-title">AI-First Software Development</h2>
+  <div class="callout border-d2" style="margin-bottom:16px;">
+    <div class="callout-title d2">The rehash loop — key failure mode</div>
+    <p>AI keeps generating slight variations of the same wrong answer. It's not a prompt problem — the AI has <strong style="color:var(--white)">exhausted the context you gave it</strong>. Stop prompting. Apply the Sens-AI habits.</p>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Traditional dev</div>
+      <p>Developer writes code → runs tests → ships.</p>
+    </div>
+    <div class="card" style="border-color:rgba(20,184,166,.3);">
+      <div class="card-title" style="color:var(--d2)">AI-First dev</div>
+      <p>Developer provides <strong style="color:var(--white)">strategic intent + framing + judgment</strong>. Agent handles mechanical execution.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.1b SENSAI OVERVIEW ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Sens-AI Framework</p>
+  <h2 class="slide-title">Five Habits <span style="color:var(--text3);font-size:.7em;font-family:var(--ff-body);">Andrew Stellman · O'Reilly 2025</span></h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(94,184,160,.15);color:#5eb8a0">Context</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(99,149,212,.15);color:#6395d4">Research</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(212,164,74,.15);color:#d4a44a">Framing</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(201,112,90,.15);color:#c9705a">Refining</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(184,122,184,.15);color:#b87ab8">Critical Thinking</span>
+    <div class="loop-note">Critical Thinking reveals what Context was missing — the loop restarts, compounding quality over time.</div>
+  </div>
+  <div class="grid-5" style="max-width:860px;">
+    <div class="card" style="border-top:3px solid #5eb8a0;text-align:center;">
+      <div class="card-num">01</div>
+      <div class="card-title" style="color:#5eb8a0;font-size:.8rem;">Context</div>
+      <p style="font-size:.72rem;">What does AI need to know?</p>
+    </div>
+    <div class="card" style="border-top:3px solid #6395d4;text-align:center;">
+      <div class="card-num">02</div>
+      <div class="card-title" style="color:#6395d4;font-size:.8rem;">Research</div>
+      <p style="font-size:.72rem;">Deepen your own understanding</p>
+    </div>
+    <div class="card" style="border-top:3px solid #d4a44a;text-align:center;">
+      <div class="card-num">03</div>
+      <div class="card-title" style="color:#d4a44a;font-size:.8rem;">Framing</div>
+      <p style="font-size:.72rem;">Define what you're solving</p>
+    </div>
+    <div class="card" style="border-top:3px solid #c9705a;text-align:center;">
+      <div class="card-num">04</div>
+      <div class="card-title" style="color:#c9705a;font-size:.8rem;">Refining</div>
+      <p style="font-size:.72rem;">Iterate deliberately</p>
+    </div>
+    <div class="card" style="border-top:3px solid #b87ab8;text-align:center;">
+      <div class="card-num">05</div>
+      <div class="card-title" style="color:#b87ab8;font-size:.8rem;">Critical Thinking</div>
+      <p style="font-size:.72rem;">Judge before you trust</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.1c SENSAI HABITS DETAIL ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Sens-AI Framework</p>
+  <h2 class="slide-title">Habits in Practice</h2>
+  <table class="ref-table">
+    <thead><tr><th>#</th><th>Habit</th><th>The question to ask</th><th>Key anti-pattern</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#5eb8a0;">01 Context</td><td style="color:var(--text);">Supply code, intent, constraints, what you've tried</td><td>"What does AI need that it doesn't have?"</td><td>Thin prompt: "fix the bug"</td></tr>
+      <tr><td style="color:#6395d4;">02 Research</td><td style="color:var(--text);">Use AI + docs + codebase to <em>you</em> understand better</td><td>"Do I understand this enough to guide AI?"</td><td>Prompting out of a stuck loop</td></tr>
+      <tr><td style="color:#d4a44a;">03 Framing</td><td style="color:var(--text);">What you want + constraints + don'ts + definition of done</td><td>"Am I solving the right problem, precisely?"</td><td>Vague: "make it more testable"</td></tr>
+      <tr><td style="color:#c9705a;">04 Refining</td><td style="color:var(--text);">Read → diagnose specifically → one targeted change</td><td>"What was wrong, and what one thing do I change?"</td><td>Random tweaks → vibe coding</td></tr>
+      <tr><td style="color:#b87ab8;">05 Critical</td><td style="color:var(--text);">Generate alternatives, use AI as its own critic, 6-month test</td><td>"Is this correct and will it hold up?"</td><td>Accepting first output passively</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─────────── 2.1d RULES COMMANDS SKILLS ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1</p>
+  <h2 class="slide-title">Rules, Commands & Skills</h2>
+  <div class="grid-3">
+    <div class="card">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Rules</div>
+      <div class="card-title">Operating Constraints</div>
+      <p>Defined in <code style="font-size:.82em;font-family:var(--ff-mono);">CLAUDE.md</code>. Role, capabilities, constraints, escalation rules. Loaded every session. Applies Sens-AI Context habit upfront.</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Commands</div>
+      <div class="card-title">Predefined Workflows</div>
+      <p>Slash commands: <code style="font-size:.82em;font-family:var(--ff-mono);">/review /test /migrate /doc</code>. Pre-engineered prompts for recurring tasks. Applies Sens-AI Framing habit.</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Skills</div>
+      <div class="card-title">Reusable Sub-procedures</div>
+      <p>Self-contained agent workflows with typed input/output contracts. Include a self-evaluation step. Applies Sens-AI Critical Thinking habit.</p>
+    </div>
+  </div>
+  <div class="callout border-d2" style="margin-top:14px;">
+    <div class="callout-title d2">Sub-agents: Local vs Cloud</div>
+    <p><strong style="color:var(--white)">Local</strong> — in-process LangGraph graph, zero network, shared memory.<br/><strong style="color:var(--white)">Cloud</strong> — HTTP delegation to a deployed agent; returns when complete.</p>
+  </div>
+</div>
+
+<!-- ─────────── 2.1e MCP ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1</p>
+  <h2 class="slide-title">Model Context Protocol (MCP)</h2>
+  <div class="callout border-d2" style="margin-bottom:16px;">
+    <div class="callout-title d2">What it solves</div>
+    <p>Before MCP: every agent needed custom integration code per tool. After MCP: write a tool server once, any compatible agent uses it — including Claude Code.</p>
+  </div>
+  <div class="diagram">┌─────────────────────────────────────────────────────────┐
+│  MCP Client (Agent)      MCP Server (Tool Provider)     │
+│  ───────────────────     ─────────────────────────      │
+│  Claude Code        ←──→  Filesystem server             │
+│  Custom LangGraph   ←──→  GitHub server                 │
+│  Any MCP client     ←──→  PostgreSQL server             │
+│                     ←──→  Your custom server            │
+│                                                         │
+│       JSON-RPC 2.0 over stdio / HTTP+SSE                │
+└─────────────────────────────────────────────────────────┘</div>
+</div>
+
+<!-- ─────────── 2.2a CONTEXT ENGINEERING ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.2</p>
+  <h2 class="slide-title">Context Engineering</h2>
+  <div class="diagram" style="margin-bottom:16px;">Token budget for a 100K context agent:
+──────────────────────────────────────────
+   4,000 → System prompt + rules        (required, never trimmed)
+  10,000 → Retrieved memory             (priority 8)
+  30,000 → Conversation history         (priority 6)
+  20,000 → Tool results                 (priority 5)
+  20,000 → Current document / code      (priority 4)
+  16,000 → Reserved for model output
+──────────────────────────────────────────</div>
+  <ul class="bullets">
+    <li><div class="bullet-dot" style="background:var(--amber)"></div><div><strong>Lost-in-the-middle</strong> <span>— LLMs miss info in the middle. Put critical instructions at the top.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--rose)"></div><div><strong>Context poisoning</strong> <span>— stale/wrong tool results accumulate and mislead. Tag errors, strip irrelevant history.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d2)"></div><div><strong>Priority trimming</strong> <span>— when budget overflows, trim lowest-priority slots first. System prompt is sacred.</span></div></li>
+  </ul>
+</div>
+
+<!-- ─────────── 2.2b MEMORY TYPES ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.2</p>
+  <h2 class="slide-title">Four Memory Types</h2>
+  <div class="grid-2" style="max-width:760px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Session</div>
+      <div class="card-title">Working Memory</div>
+      <p>LangGraph AgentState. Current conversation only. O(1) access. Lost when session ends.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #6395d4">
+      <div class="tag" style="background:rgba(99,149,212,.15);color:#6395d4">Episodic</div>
+      <div class="card-title">Past Run Logs</div>
+      <p>ChromaDB + embeddings. "Last time I fixed auth errors, I did X." Written after each run, retrieved at session start.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">Semantic</div>
+      <div class="card-title">Domain Knowledge</div>
+      <p>Vector DB (Chroma/Qdrant). API docs, codebase patterns. Retrieved by similarity per query.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #b87ab8">
+      <div class="tag" style="background:rgba(184,122,184,.15);color:#b87ab8">Procedural</div>
+      <div class="card-title">How-To Knowledge</div>
+      <p>CLAUDE.md / system prompt snippets. Heuristics, workflows, coding standards. Loaded at startup.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3a OBSERVABILITY ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3</p>
+  <h2 class="slide-title">Observability with Langfuse</h2>
+  <div class="callout border-d2" style="margin-bottom:16px;">
+    <div class="callout-title d2">Why agents need tracing</div>
+    <p>When an agent produces a wrong answer: which LLM call failed? What was the exact prompt? Which tool was called with what args? How much did it cost? Without traces, you're debugging blind.</p>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Langfuse captures automatically</div>
+      <p>Full trace tree · LLM spans (prompt, response, tokens) · Tool spans (name, args, output) · Cost per run · Latency per step</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Operational metrics to alert on</div>
+      <p><strong style="color:var(--white)">Tool error rate</strong> &gt;40% → alert<br/><strong style="color:var(--white)">Run duration</strong> &gt;120s → alert<br/><strong style="color:var(--white)">Token cost</strong> per run<br/><strong style="color:var(--white)">LLM calls</strong> per task</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3b GUARDRAILS ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3</p>
+  <h2 class="slide-title">Three Guardrail Layers</h2>
+  <div class="diagram" style="margin-bottom:14px;">User Input ──→ [INPUT GUARDRAIL] ──→ Agent
+                                        │
+                            Action planned (tool call)
+                                        │
+               [TOOL CALL GUARDRAIL] ──→ Tools
+                                        │
+                            Tool result received
+                                        │
+              [OUTPUT GUARDRAIL] ──→ User Response</div>
+  <div class="grid-3" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Input</div>
+      <p>Screen for prompt injection, jailbreaks, harmful requests. Wrap external content in <code style="font-size:.8em;font-family:var(--ff-mono);">[EXTERNAL_CONTENT]</code> tags.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title" style="color:var(--amber)">Tool Call</div>
+      <p>Policy check before execution. Block deletes, env files, production deploys. Pause + human approval for irreversible actions.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-title" style="color:var(--purple)">Output</div>
+      <p>Screen for leaked secrets, PII (email, SSN, API keys), internal system details. Redact before returning to user.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── DAY 3 BREAK ─────────── -->
+<div class="slide slide-day" data-day="3">
+  <p class="eyebrow d3">Day Three</p>
+  <h2 class="day-title">Multi-Agent Systems</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:480px;">Six topology patterns, agent-to-agent protocols (A2A, ACP), evaluation frameworks, and capstone project.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">6 Topologies</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">A2A Protocol</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">ACP Protocol</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Tool Call Accuracy</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Trajectory Eval</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Capstone</span>
+  </div>
+</div>
+
+<!-- ─────────── 3.1a WHY MULTI-AGENT ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1</p>
+  <h2 class="slide-title">When to Use Multi-Agent</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);">
+      <div class="compare-head" style="background:rgba(16,185,129,.12);color:var(--green)">Reach for it when</div>
+      <div class="compare-body">
+        Task exceeds single context window<br/>
+        Subtasks are genuinely parallel<br/>
+        Different parts need different expertise<br/>
+        Need redundancy / consensus
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.25);">
+      <div class="compare-head" style="background:rgba(244,63,94,.12);color:var(--rose)">Do NOT reach for it when</div>
+      <div class="compare-body">
+        A single agent with good tools can handle it<br/>
+        You're still debugging the single-agent version<br/>
+        Coordination overhead &gt; the benefit
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--rose);margin-top:16px;">
+    <div class="callout-title" style="color:var(--rose)">Rule of thumb</div>
+    <p>Every agent you add is a new failure point. Start simple. Only reach for multi-agent when the single-agent ceiling genuinely limits you.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b TOPOLOGIES ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1</p>
+  <h2 class="slide-title">Six Topology Patterns</h2>
+  <div class="topo-grid">
+    <div class="topo-card" style="border-top:3px solid var(--d1)">
+      <div class="topo-name">Supervisor → Worker</div>
+      <div class="topo-use">Supervisor decomposes & dispatches to specialists in parallel.</div>
+      <div class="topo-pattern">Use when: parallel, independent subtasks</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--teal)">
+      <div class="topo-name">Router → Expert</div>
+      <div class="topo-use">Router classifies request, routes to the right specialist.</div>
+      <div class="topo-pattern">Use when: many request types, clear categories</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--amber)">
+      <div class="topo-name">Orchestrator</div>
+      <div class="topo-use">Dynamically decides which agent to call next based on intermediate results.</div>
+      <div class="topo-pattern">Use when: dynamic, adaptive workflows</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--purple)">
+      <div class="topo-name">Round Table</div>
+      <div class="topo-use">All agents see the same task; moderator synthesises consensus.</div>
+      <div class="topo-pattern">Use when: diverse perspectives needed</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--cyan)">
+      <div class="topo-name">Tree of Agents</div>
+      <div class="topo-use">Recursive decomposition; results propagate back up the tree.</div>
+      <div class="topo-pattern">Use when: massive tasks, recursive structure</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--green)">
+      <div class="topo-name">Pipeline</div>
+      <div class="topo-use">Linear stages: each agent's output is the next agent's input.</div>
+      <div class="topo-pattern">Use when: ordered stages, deterministic flow</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.2a A2A ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2</p>
+  <h2 class="slide-title">A2A Protocol <span style="color:var(--text3);font-size:.6em;font-family:var(--ff-body);">Google, 2025</span></h2>
+  <div class="diagram" style="margin-bottom:14px;">Client Agent                    Remote Agent
+─────────────                   ────────────
+GET /.well-known/agent.json →   Agent Card (name, skills, endpoint)
+POST /tasks             →       Task accepted (returns task_id)
+GET /tasks/{id}/stream  →       SSE: working → completed + result</div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Agent Card</div>
+      <p>JSON manifest: name, version, skills, capabilities. Enables discovery. Any A2A client can use any A2A server without custom code.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--d3)">ACP (IBM)</div>
+      <p>Async message bus (Redis Streams/pub-sub). Better for long-running pipelines with many agents. A2A = request/response; ACP = event-driven.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b EVALUATION ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2</p>
+  <h2 class="slide-title">Agent Evaluation</h2>
+  <div class="grid-2" style="max-width:760px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-title">Tool Call Accuracy</div>
+      <p>Was the right tool called with the right arguments?<br/><br/>
+      Checks: correct tool selected · argument match · hallucinated tool names · unnecessary calls</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-title">Trajectory Evaluation</div>
+      <p>Was the <em>sequence</em> of tool calls efficient?<br/><br/>
+      Metrics: <strong style="color:var(--white)">efficiency ratio</strong> = reference_steps / actual_steps · loop count · backtrack count</p>
+    </div>
+  </div>
+  <div class="callout border-d3">
+    <div class="callout-title d3">Eval-driven development</div>
+    <p>Write eval cases <strong style="color:var(--white)">before</strong> implementing features. When a production bug occurs, immediately translate it into a new test case. Run evals in CI on every PR touching a prompt or tool.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.3 CAPSTONE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.3</p>
+  <h2 class="slide-title">Capstone Project</h2>
+  <div class="grid-3">
+    <div class="card" style="border-top:3px solid var(--d1)">
+      <div class="tag" style="background:rgba(59,130,246,.15);color:var(--d1)">Option A</div>
+      <div class="card-title">Autonomous PR Reviewer</div>
+      <p>Router topology. Security + Performance + Style workers. Human approval for blocking reviews. Langfuse traces.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Option B</div>
+      <div class="card-title">Incident Responder</div>
+      <p>Triage classifier + automated remediation. Knowledge graph of known incidents. Escalate only on unknown failures.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="tag" style="background:rgba(139,92,246,.15);color:var(--d3)">Option C</div>
+      <div class="card-title">Research Synthesiser</div>
+      <p>Pipeline topology. Web + internal docs retrieval. Cited reports. Ragas faithfulness ≥0.85. Self-curating memory.</p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="margin-top:14px;">
+    <div class="callout-title d3">Deliverables</div>
+    <p>Agent graph diagram · Memory design table · Tool inventory with safety class · 10 eval cases · Top 3 failure modes + mitigations</p>
+  </div>
+</div>
+
+<!-- ─────────── CLOSING ─────────── -->
+<div class="slide slide-cover" data-day="0">
+  <p class="eyebrow" style="color:var(--cyan)">End of Course</p>
+  <h1 class="cover-title">What You Can<br/><em>Build Now</em></h1>
+  <table class="ref-table" style="max-width:620px;text-align:left;margin-top:24px;">
+    <thead><tr><th>Timeline</th><th>What to build</th><th>Applies</th></tr></thead>
+    <tbody>
+      <tr><td>Week 1</td><td>Single-agent tool for your team</td><td>Day 1 + Langfuse from day one</td></tr>
+      <tr><td>Week 2–3</td><td>Add memory to your agent</td><td>Day 2.2 episodic + semantic</td></tr>
+      <tr><td>Month 1</td><td>Scale to multi-agent (only if needed)</td><td>Day 3.1 topology patterns</td></tr>
+      <tr><td>Month 2</td><td>Evaluate and harden — 80% pass rate</td><td>Day 3.2 eval harness</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ─────────── CHROME ─────────── -->
+<div id="chrome">
+  <button class="nav-btn" id="btn-prev" title="Previous (←)">←</button>
+  <button class="nav-btn" id="btn-next" title="Next (→ or Space)">→</button>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <span id="slide-counter">1 / 1</span>
+  <span id="day-indicator">Intro</span>
+</div>
+
+<div id="key-hint">← → Space to navigate</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let current = 0;
+
+const fill = document.getElementById('progress-fill');
+const counter = document.getElementById('slide-counter');
+const dayInd = document.getElementById('day-indicator');
+const keyHint = document.getElementById('key-hint');
+
+const dayConfig = {
+  0: { label: 'Intro',  color: '#22d3ee' },
+  1: { label: 'Day 1',  color: '#3b82f6' },
+  2: { label: 'Day 2',  color: '#14b8a6' },
+  3: { label: 'Day 3',  color: '#8b5cf6' },
+};
+
+function goTo(n, direction = 1) {
+  if (n < 0 || n >= total) return;
+  const prev = slides[current];
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 300);
+
+  current = n;
+  slides[current].classList.add('active');
+
+  // Progress
+  fill.style.width = ((current / (total - 1)) * 100) + '%';
+  counter.textContent = (current + 1) + ' / ' + total;
+
+  // Day indicator
+  const day = parseInt(slides[current].dataset.day || '0');
+  const cfg = dayConfig[day] || dayConfig[0];
+  dayInd.textContent = cfg.label;
+  dayInd.style.color = cfg.color;
+}
+
+document.getElementById('btn-prev').addEventListener('click', () => goTo(current - 1, -1));
+document.getElementById('btn-next').addEventListener('click', () => goTo(current + 1, 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1, 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, -1); }
+  if (e.key === 'Home') goTo(0);
+  if (e.key === 'End') goTo(total - 1);
+});
+
+// Touch swipe
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) goTo(dx < 0 ? current + 1 : current - 1);
+}, { passive: true });
+
+// Hide key hint after 4s
+setTimeout(() => keyHint.classList.add('hidden'), 4000);
+
+// Init
+goTo(0);
+</script>
+</body>
+</html>

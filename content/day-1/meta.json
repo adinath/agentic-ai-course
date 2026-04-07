@@ -1,14 +1,14 @@
 {
   "id": "day1",
   "number": 1,
-  "title": "Day 1 \u2014 Foundations of Agentic AI",
+  "title": "Day 1 \u2014 LLM Based Agents",
   "banner_color": "#3b82f6",
   "banner_label": "Day 1 \u00b7 3 Sessions",
-  "banner_title": "Foundations of Agentic AI",
-  "banner_sub": "From LLM calls to autonomous agents \u2014 architecture, tools, and reasoning loops",
+  "banner_title": "LLM Based Agents",
+  "banner_sub": "From zero to autonomous \u2014 agent fundamentals, frameworks, tools, reasoning loops, and RAG",
   "sessions": [
-    {"id": "s11", "number": "1.1", "title": "What Makes an Agent?", "file": "session-1-1.md"},
-    {"id": "s12", "number": "1.2", "title": "Tools & Actions", "file": "session-1-2.md"},
-    {"id": "s13", "number": "1.3", "title": "Planning & Reasoning", "file": "session-1-3.md"}
+    {"id": "s11", "number": "1.1", "title": "What is an Agent?", "file": "session-1-1.md"},
+    {"id": "s12", "number": "1.2", "title": "Frameworks, Tools & ReAct", "file": "session-1-2.md"},
+    {"id": "s13", "number": "1.3", "title": "Plan & Execute + RAG", "file": "session-1-3.md"}
   ]
 }

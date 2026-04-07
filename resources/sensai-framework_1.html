@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sens-AI Framework — Five Habits for Coding with AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2126;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6e0;
+    --muted: #7a7870;
+    --accent: #c8b97a;
+
+    --c1: #5eb8a0;   /* context — teal */
+    --c2: #6395d4;   /* research — blue */
+    --c3: #d4a44a;   /* framing — amber */
+    --c4: #c9705a;   /* refining — coral */
+    --c5: #b87ab8;   /* critical — pink/purple */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(14,15,17,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 2rem;
+    height: 52px;
+  }
+
+  .nav-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    color: var(--accent);
+    margin-right: 2rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 52px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .nav-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    min-height: 100vh;
+    padding: 100px 0 80px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 900px;
+    padding: 0 2rem;
+  }
+
+  /* ── HERO ── */
+  #overview {
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 30%, rgba(200,185,122,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 70%, rgba(94,184,160,0.05) 0%, transparent 70%);
+    align-items: center;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+  }
+
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 1.4rem;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 580px;
+    margin-bottom: 2.4rem;
+  }
+
+  /* ── HABIT CARDS (overview) ── */
+  .habit-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 2.4rem;
+  }
+
+  @media (max-width: 700px) {
+    .habit-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .habit-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    display: block;
+    transition: transform 0.18s, border-color 0.18s, background 0.18s;
+    cursor: pointer;
+  }
+  .habit-pill:hover {
+    transform: translateY(-2px);
+    background: var(--surface2);
+  }
+
+  .pill-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .pill-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: block;
+  }
+  .pill-tagline {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3px;
+    display: block;
+  }
+
+  /* ── LOOP DIAGRAM ── */
+  .loop-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.6rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .loop-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .loop-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .loop-node {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .loop-arrow {
+    color: var(--muted);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .loop-feedback {
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .loop-feedback::before {
+    content: '↻';
+    font-size: 1rem;
+    color: var(--accent);
+  }
+
+  /* ── REHASH BOX ── */
+  .callout {
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    border-left: 3px solid;
+    background: var(--surface);
+    margin-bottom: 1.4rem;
+  }
+  .callout-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .callout p {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* ── HABIT SECTION HEADER ── */
+  .habit-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.4rem;
+    margin-bottom: 2rem;
+  }
+
+  .habit-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3.5rem;
+    line-height: 1;
+    opacity: 0.18;
+    flex-shrink: 0;
+  }
+
+  .habit-meta {
+    flex: 1;
+  }
+
+  .habit-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .habit-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .habit-def {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.65;
+    font-style: italic;
+    border-left: 2px solid;
+    padding-left: 1rem;
+    margin-bottom: 1.8rem;
+  }
+
+  /* ── CARDS ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.6rem;
+  }
+
+  @media (max-width: 580px) {
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── COMPARE TABLE ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.6rem;
+  }
+
+  .compare-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .compare-head {
+    padding: 10px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-body {
+    padding: 12px 14px;
+    font-size: 0.84rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .compare-body code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 5px;
+    border-radius: 4px;
+    display: block;
+    margin: 4px 0;
+    color: var(--text);
+  }
+
+  /* ── CHECKLIST ── */
+  .checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 1.6rem;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .check-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-top: 1px;
+    color: var(--bg);
+  }
+
+  /* ── TECHNIQUE STEPS ── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 1.6rem;
+  }
+
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--bg);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-content strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .step-content span {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  /* ── LINK BUTTON ── */
+  .ref-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(200,185,122,0.3);
+    padding: 5px 12px;
+    border-radius: 20px;
+    transition: background 0.18s;
+    margin-right: 8px;
+    margin-top: 4px;
+  }
+  .ref-link:hover { background: rgba(200,185,122,0.08); }
+  .ref-link::after { content: '↗'; font-size: 0.7rem; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+
+  /* ── SUMMARY SECTION ── */
+  #summary {
+    background:
+      radial-gradient(ellipse 50% 60% at 50% 0%, rgba(200,185,122,0.05) 0%, transparent 70%);
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 700px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1rem;
+  }
+
+  .summary-card-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .summary-card-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .summary-card-q {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .quote-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .quote-block p {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .quote-attr {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* ── PROGRESS INDICATOR ── */
+  .progress-bar {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    height: 2px;
+    background: var(--accent);
+    z-index: 99;
+    transition: width 0.1s;
+  }
+
+  /* ── SCROLL FADE IN ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<nav>
+  <span class="nav-brand">Sens-AI</span>
+  <div class="nav-links" id="navLinks">
+    <a href="#overview" class="active">Overview</a>
+    <a href="#context"><span class="nav-dot" style="background:var(--c1)"></span>Context</a>
+    <a href="#research"><span class="nav-dot" style="background:var(--c2)"></span>Research</a>
+    <a href="#framing"><span class="nav-dot" style="background:var(--c3)"></span>Framing</a>
+    <a href="#refining"><span class="nav-dot" style="background:var(--c4)"></span>Refining</a>
+    <a href="#critical"><span class="nav-dot" style="background:var(--c5)"></span>Critical Thinking</a>
+    <a href="#summary">Summary</a>
+  </div>
+</nav>
+
+<!-- ══════════════ OVERVIEW ══════════════ -->
+<section id="overview">
+  <div class="container">
+    <p class="hero-label fade-up">Andrew Stellman · O'Reilly 2025</p>
+    <h1 class="hero-title fade-up">The <em>Sens-AI</em> Framework</h1>
+    <p class="hero-sub fade-up">Five critical thinking habits that turn AI from an autocomplete tool into a genuine collaborator — without losing your engineering judgment in the process.</p>
+
+    <div class="habit-grid fade-up">
+      <a class="habit-pill" href="#context" style="border-top: 3px solid var(--c1)">
+        <div class="pill-num">01</div>
+        <span class="pill-name" style="color:var(--c1)">Context</span>
+        <span class="pill-tagline">What does AI need to know?</span>
+      </a>
+      <a class="habit-pill" href="#research" style="border-top: 3px solid var(--c2)">
+        <div class="pill-num">02</div>
+        <span class="pill-name" style="color:var(--c2)">Research</span>
+        <span class="pill-tagline">Deepen your own understanding</span>
+      </a>
+      <a class="habit-pill" href="#framing" style="border-top: 3px solid var(--c3)">
+        <div class="pill-num">03</div>
+        <span class="pill-name" style="color:var(--c3)">Problem Framing</span>
+        <span class="pill-tagline">Define what you're solving</span>
+      </a>
+      <a class="habit-pill" href="#refining" style="border-top: 3px solid var(--c4)">
+        <div class="pill-num">04</div>
+        <span class="pill-name" style="color:var(--c4)">Refining</span>
+        <span class="pill-tagline">Iterate deliberately</span>
+      </a>
+      <a class="habit-pill" href="#critical" style="border-top: 3px solid var(--c5)">
+        <div class="pill-num">05</div>
+        <span class="pill-name" style="color:var(--c5)">Critical Thinking</span>
+        <span class="pill-tagline">Judge before you trust</span>
+      </a>
+    </div>
+
+    <div class="loop-diagram fade-up">
+      <div class="loop-label">The reinforcing loop</div>
+      <div class="loop-flow">
+        <span class="loop-node" style="background:rgba(94,184,160,0.15);color:var(--c1)">Context</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-node" style="background:rgba(99,149,212,0.15);color:var(--c2)">Research</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-node" style="background:rgba(212,164,74,0.15);color:var(--c3)">Framing</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-node" style="background:rgba(201,112,90,0.15);color:var(--c4)">Refining</span>
+        <span class="loop-arrow">→</span>
+        <span class="loop-node" style="background:rgba(184,122,184,0.15);color:var(--c5)">Critical Thinking</span>
+      </div>
+      <div class="loop-feedback">Critical Thinking reveals what Context was missing — the loop restarts, compounding quality over time.</div>
+    </div>
+
+    <div class="callout fade-up" style="border-color:var(--accent)">
+      <div class="callout-title" style="color:var(--accent)">The core insight</div>
+      <p>When AI output goes wrong, the root cause is almost never a dumb model. It's a gap in framing, context, or understanding that the AI couldn't supply on its own. These five habits close those gaps — systematically.</p>
+    </div>
+
+    <div class="callout fade-up" style="border-color:#e05252">
+      <div class="callout-title" style="color:#e05252">The rehash loop — the key failure mode</div>
+      <p>When AI keeps generating slight variations of the same wrong answer no matter how you adjust your prompt, the AI has exhausted the context you've given it. Stop prompting. Apply the habits. The loop is a signal, not a bug.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CONTEXT ══════════════ -->
+<section id="context">
+  <div class="container">
+    <div class="habit-header fade-up">
+      <div class="habit-number" style="color:var(--c1)">01</div>
+      <div class="habit-meta">
+        <div class="habit-eyebrow">Habit one</div>
+        <h2 class="habit-title" style="color:var(--c1)">Context</h2>
+      </div>
+    </div>
+
+    <p class="habit-def fade-up" style="border-color:var(--c1)">
+      Paying attention to what information you supply to the model, trying to figure out what else it needs to know, and supplying it clearly — code, comments, structure, intent, constraints, and what you've already tried.
+    </p>
+
+    <div class="compare fade-up">
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(201,112,90,0.12);color:var(--c4)">Thin context — fails</div>
+        <div class="compare-body">
+          <code>"Fix the bug in my code."</code>
+          No language, no framework, no expected behaviour, no constraints. AI fills gaps with assumptions — usually wrong ones.
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(94,184,160,0.12);color:var(--c1)">Rich context — works</div>
+        <div class="compare-body">
+          <code>"This Express JWT middleware returns 200 on expired tokens instead of 401. The token is verified with jsonwebtoken v9. I've already tried catching the TokenExpiredError explicitly but it's not reached."</code>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">What "rich context" includes</h3>
+    <ul class="checklist fade-up">
+      <li><span class="check-icon" style="background:var(--c1)">✓</span>The relevant code snippet (not the whole file)</li>
+      <li><span class="check-icon" style="background:var(--c1)">✓</span>Your intent — what it's <em>supposed</em> to do, not just what it does</li>
+      <li><span class="check-icon" style="background:var(--c1)">✓</span>Constraints — performance, readability, team conventions, architecture</li>
+      <li><span class="check-icon" style="background:var(--c1)">✓</span>What you've already tried — so AI doesn't repeat failed paths</li>
+      <li><span class="check-icon" style="background:var(--c1)">✓</span>The domain — "this is a high-frequency trading system" changes everything</li>
+    </ul>
+
+    <div class="callout fade-up" style="border-color:var(--c1)">
+      <div class="callout-title" style="color:var(--c1)">Watch for context drift</div>
+      <p>In a multi-turn conversation, understanding degrades. When output starts to feel off, ask the AI to restate what it thinks the code does. If the summary is wrong, you've found the drift — and the gap to fill.</p>
+    </div>
+
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/the-sens-ai-framework/" target="_blank">Original framework article</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/prompt-engineering-is-requirements-engineering/" target="_blank">Prompt engineering is requirements engineering</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ RESEARCH ══════════════ -->
+<section id="research">
+  <div class="container">
+    <div class="habit-header fade-up">
+      <div class="habit-number" style="color:var(--c2)">02</div>
+      <div class="habit-meta">
+        <div class="habit-eyebrow">Habit two</div>
+        <h2 class="habit-title" style="color:var(--c2)">Research</h2>
+      </div>
+    </div>
+
+    <p class="habit-def fade-up" style="border-color:var(--c2)">
+      Actively using AI and external sources to deepen <em>your own</em> understanding of the problem — running examples, consulting documentation, checking references to verify what's really going on. The goal is you getting smarter, not just collecting info to paste.
+    </p>
+
+    <div class="callout fade-up" style="border-color:var(--c2)">
+      <div class="callout-title" style="color:var(--c2)">The key mindset shift</div>
+      <p>Most developers try to <em>prompt their way out</em> of a stuck situation. Research says: stop prompting, start understanding. The rehash loop isn't a prompt problem — it's a knowledge gap. Fill the gap first.</p>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">Research sources — AI is one, not the only one</h3>
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title" style="color:var(--c2)">Ask AI to explain itself</div>
+        <p>Ask it to explain what it just generated — not fix it. If the explanation is wrong, you've found the gap. This is the fastest first step.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c2)">Official documentation</div>
+        <p>AI training data may be stale on version-specific behaviour. Go to source for library APIs, framework versions, and breaking changes.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c2)">Your own codebase</div>
+        <p>How was this solved before? Existing patterns are context the AI will never have. The codebase is your most relevant research source.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c2)">Stack Overflow / GitHub Issues</div>
+        <p>For environmental problems — known bugs, version incompatibilities, edge cases the community has hit. Don't reinvent what's already documented.</p>
+      </div>
+    </div>
+
+    <div class="callout fade-up" style="border-color:var(--c2)">
+      <div class="callout-title" style="color:var(--c2)">Research feeds framing</div>
+      <p>What you learn through research becomes the raw material for a sharper problem definition. You can't frame a problem you don't understand. Research isn't a detour — it's the on-ramp to Habit 3.</p>
+    </div>
+
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/understanding-the-rehash-loop/" target="_blank">Understanding the rehash loop</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/the-ai-teaching-toolkit-practical-guidance-for-teams/" target="_blank">AI teaching toolkit</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FRAMING ══════════════ -->
+<section id="framing">
+  <div class="container">
+    <div class="habit-header fade-up">
+      <div class="habit-number" style="color:var(--c3)">03</div>
+      <div class="habit-meta">
+        <div class="habit-eyebrow">Habit three</div>
+        <h2 class="habit-title" style="color:var(--c3)">Problem Framing</h2>
+      </div>
+    </div>
+
+    <p class="habit-def fade-up" style="border-color:var(--c3)">
+      Using the information you've gathered to define the problem more clearly so the model can respond more usefully. Most AI failures are framing failures — the AI solved the problem you described, not the problem you had.
+    </p>
+
+    <div class="callout fade-up" style="border-color:var(--c3)">
+      <div class="callout-title" style="color:var(--c3)">Prompt engineering = requirements engineering</div>
+      <p>The challenges in writing good prompts are the same ones software teams have grappled with for decades: scoping, specifying functional and nonfunctional requirements, and communicating intent precisely. The skills you already use for architecture apply directly here.</p>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">The four elements of a well-framed prompt</h3>
+    <div class="card-grid fade-up">
+      <div class="card">
+        <div class="card-title" style="color:var(--c3)">What you want</div>
+        <p>A specific functional outcome — not a vague improvement. "Accept input as a string parameter" not "make it more testable."</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c3)">Constraints</div>
+        <p>Performance, readability, team coding standards, architectural decisions. Nonfunctional requirements matter as much as functional ones.</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c3)">What you don't want</div>
+        <p>Explicitly close off overengineered paths. "Don't add abstraction layers", "keep the public interface unchanged", "no new dependencies."</p>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--c3)">Definition of done</div>
+        <p>How will you know the answer is right? A concrete acceptance criterion prevents the AI from stopping too early or going too far.</p>
+      </div>
+    </div>
+
+    <div class="compare fade-up">
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(201,112,90,0.12);color:var(--c4)">Vague frame → overengineering</div>
+        <div class="compare-body">
+          <code>"Make this code more testable."</code>
+          AI adds interface, implementation, mock objects, dependency injection throughout. Valid pattern — wrong problem. A miniature framework where a simple refactor was needed.
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(94,184,160,0.12);color:var(--c1)">Precise frame → targeted fix</div>
+        <div class="compare-body">
+          <code>"Refactor this method to accept a string parameter instead of reading from stdin, so I can pass test input directly. Don't change the class structure."</code>
+          One surgical change. No abstraction layers added.
+        </div>
+      </div>
+    </div>
+
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/prompt-engineering-is-requirements-engineering/" target="_blank">Prompt engineering is requirements engineering</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/building-ai-resistant-technical-debt/" target="_blank">Building AI-resistant technical debt</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ REFINING ══════════════ -->
+<section id="refining">
+  <div class="container">
+    <div class="habit-header fade-up">
+      <div class="habit-number" style="color:var(--c4)">04</div>
+      <div class="habit-meta">
+        <div class="habit-eyebrow">Habit four</div>
+        <h2 class="habit-title" style="color:var(--c4)">Refining</h2>
+      </div>
+    </div>
+
+    <p class="habit-def fade-up" style="border-color:var(--c4)">
+      Iterating your prompts deliberately. This isn't about random tweaks; it's about making targeted changes based on what the model got right and what it missed, and using those results to guide the next step.
+    </p>
+
+    <div class="compare fade-up">
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(201,112,90,0.12);color:var(--c4)">Vibe coding (random tweaks)</div>
+        <div class="compare-body">
+          Prompt → output → "make it more X" → same answer rephrased → repeat. No diagnosis. Leads directly to the rehash loop. Code that runs but accumulates structural debt with each iteration.
+        </div>
+      </div>
+      <div class="compare-col">
+        <div class="compare-head" style="background:rgba(94,184,160,0.12);color:var(--c1)">Deliberate refining</div>
+        <div class="compare-body">
+          Read output → diagnose what was right, what was specifically wrong → make one targeted change → re-prompt. Steers toward better patterns. Moves from "this works" to "this is actually good."
+        </div>
+      </div>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">The deliberate refining loop — step by step</h3>
+    <div class="steps fade-up">
+      <div class="step">
+        <div class="step-num" style="background:var(--c4)">1</div>
+        <div class="step-content">
+          <strong>Read the output</strong>
+          <span>Don't skim. Understand what the AI actually produced before evaluating it.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--c4)">2</div>
+        <div class="step-content">
+          <strong>Diagnose specifically: what was right? What was wrong?</strong>
+          <span>The error handling is right but business logic is in the controller — not "this is bad."</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--c4)">3</div>
+        <div class="step-content">
+          <strong>Make one targeted change to the prompt</strong>
+          <span>Address the specific gap you identified. One thing at a time.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--c4)">4</div>
+        <div class="step-content">
+          <strong>Also refine the code — not just the prompt</strong>
+          <span>Clean names, reduce duplication, simplify logic, verify architecture fit. Don't stop when it compiles.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout fade-up" style="border-color:var(--c4)">
+      <div class="callout-title" style="color:var(--c4)">Agile parallel</div>
+      <p>Just as Agile shifted requirements from static specs to living conversations, prompt engineering shifts AI interaction from single-shot commands to iterative refinement — except you must infer what's missing from the output rather than having the AI ask you clarifying questions.</p>
+    </div>
+
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/building-ai-resistant-technical-debt/" target="_blank">Building AI-resistant technical debt</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/understanding-the-rehash-loop/" target="_blank">Understanding the rehash loop</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CRITICAL THINKING ══════════════ -->
+<section id="critical">
+  <div class="container">
+    <div class="habit-header fade-up">
+      <div class="habit-number" style="color:var(--c5)">05</div>
+      <div class="habit-meta">
+        <div class="habit-eyebrow">Habit five</div>
+        <h2 class="habit-title" style="color:var(--c5)">Critical Thinking</h2>
+      </div>
+    </div>
+
+    <p class="habit-def fade-up" style="border-color:var(--c5)">
+      Judging the quality of AI output rather than simply accepting it. Does the suggestion make sense? Is it correct, relevant, plausible? This habit is especially important because AI sounds confident even when it's wrong — and as models improve, the output becomes harder to question.
+    </p>
+
+    <div class="callout fade-up" style="border-color:var(--c5)">
+      <div class="callout-title" style="color:var(--c5)">The core danger</div>
+      <p>AI doesn't truly understand your codebase. It mimics patterns from its training, producing answers that look right. It's very often correct — which is why vibe coding works at all. But it rarely accounts for overall architecture, long-term strategy, or good design principles. Those gaps are your responsibility.</p>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">Three concrete techniques</h3>
+    <div class="steps fade-up">
+      <div class="step">
+        <div class="step-num" style="background:var(--c5)">A</div>
+        <div class="step-content">
+          <strong>Generate alternatives</strong>
+          <span>Ask for 2–3 solutions. Comparing them reveals different assumptions and trade-offs — and keeps your own judgment engaged rather than passive.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--c5)">B</div>
+        <div class="step-content">
+          <strong>Use AI as its own critic</strong>
+          <span>After it generates code, ask it to review that same code for problems or improvements. The context shift surfaces edge cases and design issues it didn't catch the first time.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--c5)">C</div>
+        <div class="step-content">
+          <strong>Read, run, debug — then ask "will this make sense in 6 months?"</strong>
+          <span>Quick design review: Is coupling creeping in? Are names clear? Does this fit the architecture? Catching this now is far cheaper than finding it after it's woven through the codebase.</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;color:var(--muted)">Signs the habit is taking hold in your team</h3>
+    <ul class="checklist fade-up">
+      <li><span class="check-icon" style="background:var(--c5)">✓</span>Asking "why did AI choose this pattern?" not just "does it work?"</li>
+      <li><span class="check-icon" style="background:var(--c5)">✓</span>Relating AI output to readability, separation of concerns, testability</li>
+      <li><span class="check-icon" style="background:var(--c5)">✓</span>Treating AI failures as learning opportunities — not blame</li>
+      <li><span class="check-icon" style="background:var(--c5)">✓</span>Reviewing AI-generated code with the same rigour as human-written code</li>
+    </ul>
+
+    <div class="callout fade-up" style="border-color:var(--accent)">
+      <div class="callout-title" style="color:var(--accent)">The long-term reality</div>
+      <p>More convincing output will require more sophisticated evaluation. Models will keep improving. What won't change is the need for developers to think critically about the code in front of them. As AI gets better, this habit becomes <em>more</em> important — not less.</p>
+    </div>
+
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/trust-but-verify/" target="_blank">Trust but Verify — full article</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/the-cognitive-shortcut-paradox/" target="_blank">The cognitive shortcut paradox</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SUMMARY ══════════════ -->
+<section id="summary">
+  <div class="container">
+    <p class="hero-label fade-up">Quick reference</p>
+    <h2 class="hero-title fade-up" style="font-size:2.2rem">All five habits at a glance</h2>
+
+    <div class="summary-grid fade-up">
+      <div class="summary-card" style="border-top:3px solid var(--c1)">
+        <div class="summary-card-num">01</div>
+        <div class="summary-card-name" style="color:var(--c1)">Context</div>
+        <div class="summary-card-q">"What does AI need to know that it doesn't?"</div>
+      </div>
+      <div class="summary-card" style="border-top:3px solid var(--c2)">
+        <div class="summary-card-num">02</div>
+        <div class="summary-card-name" style="color:var(--c2)">Research</div>
+        <div class="summary-card-q">"Do I understand this well enough to guide AI?"</div>
+      </div>
+      <div class="summary-card" style="border-top:3px solid var(--c3)">
+        <div class="summary-card-num">03</div>
+        <div class="summary-card-name" style="color:var(--c3)">Problem Framing</div>
+        <div class="summary-card-q">"Am I solving the right problem, precisely defined?"</div>
+      </div>
+      <div class="summary-card" style="border-top:3px solid var(--c4)">
+        <div class="summary-card-num">04</div>
+        <div class="summary-card-name" style="color:var(--c4)">Refining</div>
+        <div class="summary-card-q">"What specifically was wrong, and what one thing should I change?"</div>
+      </div>
+      <div class="summary-card" style="border-top:3px solid var(--c5)">
+        <div class="summary-card-num">05</div>
+        <div class="summary-card-name" style="color:var(--c5)">Critical Thinking</div>
+        <div class="summary-card-q">"Is this correct, sound, and will it hold up in 6 months?"</div>
+      </div>
+    </div>
+
+    <div class="quote-block fade-up">
+      <p>"These habits let developers get more out of AI while keeping control over the direction of their work. The difference between using AI as a crutch and using it as a genuine collaborator."</p>
+      <div class="quote-attr">— Andrew Stellman, O'Reilly Radar</div>
+    </div>
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;color:var(--muted)">For software architects specifically</h3>
+    <ul class="checklist fade-up">
+      <li><span class="check-icon" style="background:var(--accent)">→</span>Context = the requirements discipline you already apply. Do it <em>before</em> prompting, not after.</li>
+      <li><span class="check-icon" style="background:var(--accent)">→</span>Problem Framing = functional + nonfunctional requirements. You know how to do this. Use it.</li>
+      <li><span class="check-icon" style="background:var(--accent)">→</span>Critical Thinking = your architectural lens. Apply it to AI output the same way you apply it in code review.</li>
+      <li><span class="check-icon" style="background:var(--accent)">→</span>The developers who adapt best to AI are the ones who can frame problems, integrate across systems, and recognize patterns — that's an architect's core skillset.</li>
+    </ul>
+
+    <hr class="section-divider fade-up">
+
+    <h3 class="fade-up" style="font-size:0.88rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;color:var(--muted)">Further reading</h3>
+    <div class="fade-up">
+      <a class="ref-link" href="https://www.oreilly.com/radar/the-sens-ai-framework/" target="_blank">The Sens-AI Framework (original)</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/understanding-the-rehash-loop/" target="_blank">Understanding the rehash loop</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/prompt-engineering-is-requirements-engineering/" target="_blank">Prompt = requirements engineering</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/trust-but-verify/" target="_blank">Trust but verify</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/building-ai-resistant-technical-debt/" target="_blank">AI-resistant technical debt</a>
+      <a class="ref-link" href="https://www.oreilly.com/radar/the-cognitive-shortcut-paradox/" target="_blank">The cognitive shortcut paradox</a>
+      <a class="ref-link" href="https://www.oreilly.com/library/view/critical-thinking-habits/0642572243326/" target="_blank">Full O'Reilly report</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Sens-AI Framework by <a href="https://www.oreilly.com/pub/au/2454" target="_blank">Andrew Stellman</a> · O'Reilly 2025 ·
+  <a href="https://www.oreilly.com/radar/the-sens-ai-framework/" target="_blank">oreilly.com/radar</a>
+</footer>
+
+<script>
+  // ── Progress bar
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+    progress.style.width = pct + '%';
+  });
+
+  // ── Active nav link
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.35 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // ── Fade-up on scroll
+  const fadeEls = document.querySelectorAll('.fade-up');
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        entry.target.style.transitionDelay = (i % 6) * 0.06 + 's';
+        entry.target.classList.add('visible');
+        fadeObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  fadeEls.forEach(el => fadeObserver.observe(el));
+</script>
+</body>
+</html>

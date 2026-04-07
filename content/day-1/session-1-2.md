@@ -1,236 +1,410 @@
 ---
 id: s12
 number: "1.2"
-title: "Tools, Actions & Environment Interaction"
+title: "Frameworks, Tools & ReAct"
 time: "12:00–2:00 PM"
 duration: "2 hours"
 topics:
+  - id: t-frameworks
+    title: "Framework Introduction"
   - id: t-tooldesign
-    title: "Tool Design"
-  - id: t-execution
-    title: "Execution Patterns"
-  - id: t-toolcat
-    title: "Tool Categories"
+    title: "Tool Calling & Design"
+  - id: t-react
+    title: "ReAct Agent"
 ---
 
-Design and implement robust tool interfaces. Cover synchronous and async tool execution, error handling, and safe interaction with external systems — files, APIs, databases, and browsers.
+Frameworks are training wheels for agents — helpful until they get in the way. Understand the landscape, set up LangGraph and Ollama, then build a proper ReAct agent with iteration limits and graceful error handling.
 
-### Topic: Tool Design Principles {#t-tooldesign}
+### Topic: Framework Introduction {#t-frameworks}
 
-A tool is an API contract between your agent and the world. The quality of that contract determines whether your agent succeeds or fails. Poor tool design is the number-one cause of agent unreliability in production systems.
+#### Framework Landscape
 
-#### Schema Precision
+Every agent framework is an opinionated wrapper around the same PRAO loop you built in session 1.1. Choose based on what you need to control.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  AGENT FRAMEWORKS — DECISION MATRIX                          │
+├──────────────┬────────────────────────────────────────────-─┤
+│  LangGraph   │ Explicit state graphs, checkpoints, HITL      │
+│              │ → Production agents needing control flow      │
+├──────────────┼──────────────────────────────────────────────┤
+│  CrewAI      │ Declarative role-based teams                  │
+│              │ → Quick prototypes, role-driven workflows     │
+├──────────────┼──────────────────────────────────────────────┤
+│  AutoGen     │ Multi-agent conversations in natural language │
+│              │ → Research, debate, collaborative tasks       │
+├──────────────┼──────────────────────────────────────────────┤
+│  Custom loop │ Maximum control, zero overhead                │
+│              │ → Unusual architectures, learning the basics  │
+└──────────────┴──────────────────────────────────────────────┘
+```
+
+**LangGraph is the recommended choice for production work** — explicit state, serializable graphs, streaming, and human-in-the-loop built in.
+
+#### LangGraph Setup
+
+```bash
+pip install langgraph langchain-anthropic langchain-core
+```
 
 ```python
-# ❌ Bad: vague parameter names, no descriptions
-@tool
-def query_db(q: str) -> str:
-    """Query the database.""" ...
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import AnyMessage, HumanMessage, add_messages
+from typing import TypedDict, Annotated
 
-# ✅ Good: precise contract with constraints
+# State is a typed dict — the single source of truth for the entire graph run
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+    # add_messages reducer: replaces by ID, appends new — never use operator.add
+
+llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
+```
+
+#### Using Hosted Models (Anthropic Claude)
+
+```python
+import os
+from anthropic import Anthropic
+from langchain_anthropic import ChatAnthropic
+
+# Direct SDK — maximum control, lowest abstraction
+client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello"}],
+)
+
+# LangChain wrapper — integrates with the ecosystem (tools, callbacks, tracing)
+llm = ChatAnthropic(
+    model="claude-sonnet-4-6",
+    temperature=0,
+    max_tokens=4096,
+)
+
+# Model selection guide
+MODELS = {
+    "claude-haiku-4-5":  "Fast classification, routing, simple tools",
+    "claude-sonnet-4-6": "General reasoning, coding, multi-step tasks",  # sweet spot
+    "claude-opus-4-6":   "Complex architecture, strategic decisions, hard evals",
+}
+```
+
+#### Using Local Models (Ollama)
+
+Ollama runs open-weight models locally — no API key, no data leaves your machine. Essential for air-gapped environments or cost-sensitive development.
+
+```bash
+# Install and start Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull llama3.2          # 3B params — fast, good for tool calling
+ollama pull qwen2.5-coder:7b  # optimised for code tasks
+ollama serve                   # starts on http://localhost:11434
+```
+
+```python
+from langchain_ollama import ChatOllama
+
+# Drop-in replacement for ChatAnthropic in most LangGraph workflows
+llm_local = ChatOllama(
+    model="llama3.2",
+    temperature=0,
+    base_url="http://localhost:11434",
+)
+
+# Test tool calling capability
+from langchain_core.tools import tool
+
+@tool
+def add(a: int, b: int) -> int:
+    """Add two numbers."""
+    return a + b
+
+llm_with_tools = llm_local.bind_tools([add])
+response = llm_with_tools.invoke("What is 17 + 25?")
+print(response.tool_calls)  # → [{"name": "add", "args": {"a": 17, "b": 25}}]
+```
+
+:::tip Hosted vs. Local — when to use each
+**Hosted (Claude):** Production, complex reasoning, high-stakes decisions, multi-modal.<br/>
+**Local (Ollama):** Development, rapid iteration, cost-sensitive batch workloads, offline/air-gapped.
+:::
+
+### Topic: Tool Calling & Design {#t-tooldesign}
+
+Tools are the agent's hands. A poorly designed tool schema is the number-one cause of agent unreliability — the model can only work with what you describe.
+
+#### Tool Definition Best Practices
+
+```python
+from langchain_core.tools import tool
+from pathlib import Path
+
+WORKSPACE = Path("./workspace").resolve()
+
+# ❌ Bad: vague, no safety, no structured return
+@tool
+def query(q: str) -> str:
+    """Query the database."""
+    return db.execute(q)
+
+# ✅ Good: precise contract, validation, structured return, safety
 @tool
 def query_database(
     sql: str,
-    database: str = "production",
+    database: str = "staging",
     timeout_seconds: int = 30,
 ) -> dict:
-    """Execute a read-only SELECT query.
+    """Execute a read-only SELECT query against the application database.
 
     Args:
-        sql: A valid SELECT statement. INSERT/UPDATE/DELETE rejected.
-        database: One of: production, staging, analytics.
-        timeout_seconds: Query timeout. Max 120.
+        sql: A valid SELECT statement. INSERT/UPDATE/DELETE will be rejected.
+        database: Target database. One of: staging, analytics. (NOT production)
+        timeout_seconds: Query timeout in seconds. Maximum 120.
+
     Returns:
-        {"rows": [...], "columns": [...], "row_count": N}
+        {"rows": [...], "columns": [...], "row_count": N, "execution_ms": N}
     """
     if not sql.strip().upper().startswith("SELECT"):
-        raise ValueError("Only SELECT queries permitted.")
-```
+        raise ValueError("Only SELECT queries permitted. Use staging, not production.")
+    if database == "production":
+        raise PermissionError("Direct production queries not allowed. Use analytics replica.")
+    # ... execute and return structured result
 
-#### Idempotency & Reversibility
-
-- **Idempotent read tools:** `read_file`, `search_code`, `query_database` — safe to call multiple times.
-- **Idempotent write tools:** `write_file` (overwrites) is idempotent; `append_to_file` is NOT.
-- **Reversible write tools:** Always create a backup before modifying. Return a "revert" mechanism.
-
-### Topic: Execution Patterns {#t-execution}
-
-#### Parallel Tool Calls
-
-When a model returns multiple tool calls in one response, they can run in parallel — one of the biggest latency wins available. LangGraph's `ToolNode` handles this automatically.
-
-```python
-from langgraph.prebuilt import ToolNode
-import asyncio
-
-# ToolNode runs parallel tool calls automatically
-tool_node = ToolNode(tools=[read_file, search_code, run_tests])
-
-# Under the hood it does something like:
-async def _parallel_execute(tool_calls):
-    tasks = [
-        TOOLS[tc["name"]].ainvoke(tc["args"])
-        for tc in tool_calls
-    ]
-    return await asyncio.gather(*tasks)  # all run concurrently
-```
-
-#### Sandboxing: Safe Code Execution
-
-When an agent can execute code, sandboxing is mandatory. Options in increasing isolation:
-
-- **subprocess with timeout** — basic protection, not isolated.
-- **Docker exec** — isolated filesystem; agent cannot escape unless you mount volumes.
-- **E2B (e2b.dev)** — managed cloud sandboxes with a simple Python SDK, best for SaaS agents.
-- **Firecracker microVMs** — production-grade isolation used by cloud providers.
-
-```python
-from e2b_code_interpreter import Sandbox
 
 @tool
-def run_python_code(code: str) -> str:
-    """Execute Python in an isolated cloud sandbox.
-    No access to host filesystem or network.
+def read_file(path: str) -> str:
+    """Read the contents of a file within the workspace directory.
+
+    Args:
+        path: Relative path from workspace root (e.g. 'src/main.py').
+
+    Returns:
+        File contents as string. Raises PermissionError if path escapes workspace.
     """
-    with Sandbox() as sbx:
-        execution = sbx.run_code(code)
-        return {
-            "stdout": execution.text,
-            "stderr": [str(e) for e in execution.errors],
-        }
-```
-
-### Topic: Real-World Tool Categories {#t-toolcat}
-
-Production agents need tools that interact with real systems. These fall into several broad categories, each with distinct design patterns and safety considerations. Understanding the category helps you pick the right abstraction and error-handling strategy.
-
-#### File System & Shell Tools
-
-The most common category for developer agents. Always scope file access to a specific directory and validate paths to prevent directory traversal. Run untrusted code in an isolated sandbox rather than directly on the host.
-
-```python
-import subprocess
-from pathlib import Path
-
-WORKSPACE = Path("/workspace").resolve()
-
-def _safe_path(path: str) -> Path:
     resolved = (WORKSPACE / path).resolve()
     if not str(resolved).startswith(str(WORKSPACE)):
         raise PermissionError(f"Path outside workspace: {path}")
-    return resolved
+    return resolved.read_text()
+```
+
+#### Tool Design Checklist
+
+- **Precise names** — `query_database` not `query`. The name is the model's primary signal.
+- **Docstring as contract** — describe what it does, what each arg means, what it returns, and any constraints.
+- **Structured returns** — return dicts/objects, not raw strings. The model can reason about structured data more reliably.
+- **Validation up front** — reject bad inputs immediately with a clear error message. The model will read the error and self-correct.
+- **Scope constraints** — never give an agent more access than it needs for the current task.
+
+#### Binding Tools to a Model in LangGraph
+
+```python
+from langchain_core.tools import tool
+from langgraph.prebuilt import ToolNode
 
 @tool
-def run_shell(command: str) -> str:
-    """Run a shell command inside /workspace. Destructive commands blocked."""
-    BLOCKED = ["rm -rf", "curl ", "wget ", "sudo "]
-    if any(b in command for b in BLOCKED):
-        raise PermissionError(f"Blocked: {command}")
+def write_file(path: str, content: str) -> str:
+    """Write content to a file in the workspace."""
+    resolved = (WORKSPACE / path).resolve()
+    if not str(resolved).startswith(str(WORKSPACE)):
+        raise PermissionError(f"Path outside workspace: {path}")
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_text(content)
+    return f"Wrote {len(content)} bytes to {path}"
+
+@tool
+def run_tests(test_path: str = "tests/") -> str:
+    """Run pytest on the given path and return the output."""
+    import subprocess
     result = subprocess.run(
-        command, shell=True, capture_output=True,
-        text=True, cwd=WORKSPACE, timeout=30
+        ["python", "-m", "pytest", test_path, "-v", "--tb=short"],
+        capture_output=True, text=True, cwd=WORKSPACE, timeout=60
     )
-    return (result.stdout + result.stderr)[:4000]
+    return (result.stdout + result.stderr)[-3000:]  # last 3K chars
+
+tools = [read_file, write_file, run_tests]
+llm_with_tools = llm.bind_tools(tools)
+tool_node = ToolNode(tools)  # handles parallel tool calls automatically
 ```
 
-#### Web Search & Browser Automation
+### Topic: ReAct Agent {#t-react}
 
-Web access is one of the most powerful capabilities you can give an agent. **Tavily** is optimised for agents — it returns clean extracted text rather than raw HTML, greatly reducing context bloat. For interactive pages (forms, login flows, SPAs), use Playwright browser automation.
+ReAct (Reasoning + Acting) is the dominant pattern for tool-using agents. The model alternates between producing a reasoning trace and selecting an action. LangGraph makes a ReAct agent a first-class citizen.
+
+#### Full ReAct Agent with LangGraph
 
 ```python
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import AnyMessage, HumanMessage, add_messages
+from typing import TypedDict, Annotated
 
-# Tavily: best for agents — returns clean extracted text
-search = TavilySearchResults(
-    max_results=5,
-    search_depth="advanced",
-    include_raw_content=False,  # keep context compact
-)
-results = search.invoke("LangGraph 1.1 latest release notes")
-# → [{"url": "...", "content": "..."}, ...]
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
 
-# Playwright for interactive browser sessions
-from langchain_community.tools.playwright.utils import (
-    create_async_playwright_browser,
-)
-from langchain_community.agent_toolkits import PlayWrightBrowserToolkit
+llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
+tools = [read_file, write_file, run_tests]
+llm_with_tools = llm.bind_tools(tools)
+tool_node = ToolNode(tools)
 
-browser = await create_async_playwright_browser()
-toolkit = PlayWrightBrowserToolkit.from_browser(async_browser=browser)
-tools = toolkit.get_tools()
-# Provides: navigate_browser, click_element, fill_form,
-#           extract_text, get_elements, current_page_url
+def call_model(state: AgentState) -> dict:
+    response = llm_with_tools.invoke(state["messages"])
+    return {"messages": [response]}
+
+graph = StateGraph(AgentState)
+graph.add_node("agent", call_model)
+graph.add_node("tools", tool_node)
+graph.add_edge(START, "agent")
+graph.add_conditional_edges("agent", tools_condition)  # routes to tools or END
+graph.add_edge("tools", "agent")                       # loop back after tools
+app = graph.compile()
+
+# Run it
+result = app.invoke({"messages": [HumanMessage("Fix the failing test in tests/test_api.py")]})
+print(result["messages"][-1].content)
 ```
 
-#### Database & API Tools
+#### Max Iterations — Preventing Infinite Loops
 
-Agents frequently need to query databases or call external APIs. Always use parameterised queries to prevent SQL injection, and never expose raw database credentials in tool descriptions — inject them via environment variables at runtime.
+A ReAct agent without iteration limits will loop forever when it hits an obstacle. Always set a hard cap.
 
 ```python
-import httpx, os
-from langchain_community.utilities import SQLDatabase
-from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict, Annotated
+from langchain_core.messages import AnyMessage, add_messages
 
-# Safe SQL query tool (read-only by default)
-db = SQLDatabase.from_uri(os.environ["DATABASE_URL"])
-sql_tool = QuerySQLDataBaseTool(db=db)
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+    iteration_count: int  # track loop count explicitly
 
-# Generic REST API tool with auth header injection
-@tool
-async def call_api(endpoint: str, method: str = "GET", body: dict = None) -> dict:
-    """Call an internal REST API endpoint.
-    Args:
-        endpoint: Path relative to API base, e.g. /users/42
-        method: HTTP method: GET, POST, PUT, PATCH.
-        body: JSON body for POST/PUT/PATCH requests.
-    """
-    base = os.environ["API_BASE_URL"]
-    headers = {"Authorization": f"Bearer {os.environ['API_TOKEN']}"}
-    async with httpx.AsyncClient() as client:
-        resp = await client.request(method, base + endpoint,
-                                     json=body, headers=headers, timeout=15)
-        resp.raise_for_status()
-        return resp.json()
+MAX_ITERATIONS = 15
+
+def call_model(state: AgentState) -> dict:
+    iteration = state.get("iteration_count", 0)
+    response = llm_with_tools.invoke(state["messages"])
+    return {
+        "messages": [response],
+        "iteration_count": iteration + 1,
+    }
+
+def should_continue(state: AgentState) -> str:
+    """Route: continue to tools, stop at limit, or finish naturally."""
+    last_message = state["messages"][-1]
+
+    # Natural completion — model decided it's done
+    if not getattr(last_message, "tool_calls", None):
+        return "end"
+
+    # Hard safety limit
+    if state.get("iteration_count", 0) >= MAX_ITERATIONS:
+        return "end"
+
+    return "tools"
+
+graph = StateGraph(AgentState)
+graph.add_node("agent", call_model)
+graph.add_node("tools", tool_node)
+graph.add_edge(START, "agent")
+graph.add_conditional_edges("agent", should_continue, {
+    "tools": "tools",
+    "end": END,
+})
+graph.add_edge("tools", "agent")
+app = graph.compile()
 ```
 
-#### Human-in-the-Loop: Approval Gates
+#### Error Scenarios & Recovery
 
-For irreversible or high-risk actions (sending emails, deploying to production), pause the agent and ask a human before proceeding. LangGraph supports this natively via the `interrupt()` function — the preferred API since LangGraph 1.0.
+Agents encounter three classes of errors. Handle each differently:
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.types import interrupt, Command
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import ToolMessage, HumanMessage
+import json
 
-# Add a dedicated review node that calls interrupt()
-def human_review_node(state):
-    """Pause execution and surface the pending tool calls for human approval."""
-    pending = state["messages"][-1].tool_calls
-    decision = interrupt({
-        "question": "Approve the following tool calls?",
-        "pending_calls": pending,
-    })
-    # decision is whatever the human sends back via Command(resume=...)
-    return {"approved": decision}
+class AgentState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
+    iteration_count: int
+    consecutive_errors: int    # track error streaks
+    error_log: list[str]       # audit trail for debugging
 
-checkpointer = MemorySaver()
-# Wire review_node before tools in your graph, then compile with checkpointer
-app = graph.compile(checkpointer=checkpointer)
+def safe_tool_executor(state: AgentState) -> dict:
+    """Execute tools with per-class error handling."""
+    last_message = state["messages"][-1]
+    results = []
+    consecutive_errors = state.get("consecutive_errors", 0)
 
-config = {"configurable": {"thread_id": "session-42"}}
+    for tool_call in last_message.tool_calls:
+        tool_name = tool_call["name"]
+        tool_args = tool_call["args"]
 
-# First run — hits interrupt() inside human_review_node and pauses
-state = app.invoke({"messages": [HumanMessage("Deploy v2.1 to prod")]}, config)
-print("Interrupted — pending:", state)
+        try:
+            # Class 1: Tool not found — model hallucinated a tool name
+            if tool_name not in tool_registry:
+                raise ValueError(
+                    f"Tool '{tool_name}' does not exist. "
+                    f"Available tools: {list(tool_registry.keys())}"
+                )
 
-# Human reviews and resumes with a decision
-final = app.invoke(Command(resume=True), config)   # or resume=False to abort
+            result = tool_registry[tool_name].invoke(tool_args)
+            consecutive_errors = 0  # reset on success
+
+            results.append(ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call["id"],
+            ))
+
+        except PermissionError as e:
+            # Class 2: Policy violation — block and explain, do not retry
+            consecutive_errors += 1
+            results.append(ToolMessage(
+                content=f"BLOCKED: {e}. This action is not permitted. Do not retry.",
+                tool_call_id=tool_call["id"],
+            ))
+
+        except Exception as e:
+            # Class 3: Transient failure — explain and let agent retry with correction
+            consecutive_errors += 1
+            results.append(ToolMessage(
+                content=f"ERROR: {type(e).__name__}: {e}. Please check your arguments and retry.",
+                tool_call_id=tool_call["id"],
+            ))
+
+    # Abort if error streak is too long
+    if consecutive_errors >= 3:
+        results.append(HumanMessage(
+            content="⚠️ Agent aborted after 3 consecutive errors. Please review the error log."
+        ))
+
+    return {
+        "messages": results,
+        "consecutive_errors": consecutive_errors,
+    }
+
+# Wire safe_tool_executor instead of ToolNode
+graph.add_node("tools", safe_tool_executor)
 ```
 
-:::lab Lab 1.2 — Developer Assistant with 5 Tools
+:::example ReAct trace
+**Thought (inside model):** I need to fix the failing test. First I should read the test file to understand what it expects.<br/>
+**Action:** `read_file(path="tests/test_api.py")`<br/>
+**Observation:** `def test_create_user(): ... assert response.status_code == 201`<br/>
+**Thought:** Now I need to read the actual implementation to find the mismatch.<br/>
+**Action:** `read_file(path="src/api.py")`<br/>
+**Observation:** `return JSONResponse(status_code=200, ...)`  ← bug found<br/>
+**Action:** `write_file(path="src/api.py", content=...)`<br/>
+**Action:** `run_tests(test_path="tests/test_api.py")`<br/>
+**Observation:** `1 passed`<br/>
+**Final:** The test was failing because the status code was 200 instead of 201. Fixed.
+:::
+
+:::lab Lab 1.2 — ReAct Agent with Error Recovery
 **Objectives:**
-- Build an agent with: `read_file`, `write_file`, `run_tests`, `search_web`, `call_api`.
-- Task: "Find the latest httpx changelog and update requirements.txt, then run tests."
-- Observe the agent's tool chaining strategy end-to-end.
-- Add `interrupt_before=["tools"]` and test the human approval flow.
+- Build a LangGraph ReAct agent with `read_file`, `write_file`, `run_tests`.
+- Set `MAX_ITERATIONS = 10` and verify it stops gracefully.
+- Deliberately inject a bad tool call (wrong file path) — observe the error message the model receives.
+- Task: "The test `tests/test_calculator.py` is failing. Fix the bug in `src/calculator.py`."
+- Measure: how many iterations did the agent need? What was the error recovery pattern?
 :::

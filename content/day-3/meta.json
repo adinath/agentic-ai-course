@@ -1,14 +1,14 @@
 {
   "id": "day3",
   "number": 3,
-  "title": "Day 3 \u2014 Multi-Agent Systems & Evaluation",
+  "title": "Day 3 \u2014 Multi-Agent Systems",
   "banner_color": "#8b5cf6",
   "banner_label": "Day 3 \u00b7 3 Sessions",
-  "banner_title": "Multi-Agent Systems &amp; Evaluation",
-  "banner_sub": "Orchestrating agent networks and building test harnesses to trust them in production",
+  "banner_title": "Multi-Agent Systems",
+  "banner_sub": "Topologies, agent-to-agent protocols, evaluation frameworks, and capstone project",
   "sessions": [
-    {"id": "s31", "number": "3.1", "title": "Multi-Agent Design", "file": "session-3-1.md"},
-    {"id": "s32", "number": "3.2", "title": "Agent Evaluation", "file": "session-3-2.md"},
-    {"id": "s33", "number": "3.3", "title": "Safety & Capstone", "file": "session-3-3.md"}
+    {"id": "s31", "number": "3.1", "title": "Multi-Agent Topologies", "file": "session-3-1.md"},
+    {"id": "s32", "number": "3.2", "title": "A2A Communication & Evaluation", "file": "session-3-2.md"},
+    {"id": "s33", "number": "3.3", "title": "Capstone Project", "file": "session-3-3.md"}
   ]
 }
