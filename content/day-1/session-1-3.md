@@ -89,7 +89,7 @@ def planner(state: PlanExecuteState) -> dict:
     }
 
 # Executor: cheaper model, called once per step
-executor_llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+executor_llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 executor_llm_with_tools = executor_llm.bind_tools([read_file, write_file, run_tests])
 
 def executor(state: PlanExecuteState) -> dict:
@@ -231,7 +231,7 @@ The key difference from "RAG for chatbots" is that in an agent, **retrieval is a
 #### Setting Up a Vector Store
 
 ```bash
-pip install langchain-chroma langchain-anthropic chromadb
+pip install "langchain-chroma>=0.2" "langchain-anthropic>=1.4" chromadb
 ```
 
 ```python
@@ -361,7 +361,7 @@ def query_knowledge_graph(entity: str, relation: str = None) -> list[dict]:
 You cannot improve what you cannot measure. Ragas is the standard library for evaluating RAG pipelines — it measures whether your retrieval is actually helping the agent answer correctly.
 
 ```bash
-pip install ragas datasets
+pip install "ragas>=0.2" datasets
 ```
 
 #### The Four Ragas Metrics
@@ -479,7 +479,7 @@ def diagnose_rag_pipeline(scores: dict) -> list[str]:
 **Objectives:**
 - Build a Plan-and-Execute agent for: "Audit the codebase for security vulnerabilities and generate a report."
 - Add a `search_knowledge_base` tool backed by ChromaDB (index OWASP Top-10 summaries).
-- Planner uses `claude-sonnet-4-6`; Executor uses `claude-haiku-4-5`.
+- Planner uses `claude-sonnet-4-6`; Executor uses `claude-haiku-4-5-20251001`.
 - After the run, evaluate retrieval quality with Ragas on 5 question/answer pairs.
 - Compare task completion: agent with RAG vs. agent without — measure difference in answer quality.
 :::

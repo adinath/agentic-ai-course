@@ -69,9 +69,9 @@ class SupervisorState(TypedDict):
     final_review: str
 
 # Specialised worker agents
-security_llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
-perf_llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
-style_llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+security_llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
+perf_llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
+style_llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 supervisor_llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
 
 async def security_worker(state: SupervisorState) -> dict:
@@ -144,7 +144,7 @@ class RouteDecision(BaseModel):
     reasoning: str = Field(description="One sentence explaining the routing decision")
     confidence: float = Field(ge=0.0, le=1.0)
 
-router_llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+router_llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 router = router_llm.with_structured_output(RouteDecision)
 
 def route_request(state: dict) -> str:

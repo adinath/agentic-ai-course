@@ -44,7 +44,7 @@ Every agent framework is an opinionated wrapper around the same PRAO loop you bu
 #### LangGraph Setup
 
 ```bash
-pip install langgraph langchain-anthropic langchain-core
+pip install "langgraph>=1.1" "langchain-anthropic>=1.4" "langchain-core>=1.2"
 ```
 
 ```python
@@ -86,7 +86,7 @@ llm = ChatAnthropic(
 
 # Model selection guide
 MODELS = {
-    "claude-haiku-4-5":  "Fast classification, routing, simple tools",
+    "claude-haiku-4-5-20251001":  "Fast classification, routing, simple tools",
     "claude-sonnet-4-6": "General reasoning, coding, multi-step tasks",  # sweet spot
     "claude-opus-4-6":   "Complex architecture, strategic decisions, hard evals",
 }
@@ -95,6 +95,10 @@ MODELS = {
 #### Using Local Models (Ollama)
 
 Ollama runs open-weight models locally — no API key, no data leaves your machine. Essential for air-gapped environments or cost-sensitive development.
+
+```bash
+pip install "langchain-ollama>=0.2"
+```
 
 ```bash
 # Install and start Ollama
@@ -226,7 +230,7 @@ def run_tests(test_path: str = "tests/") -> str:
 
 tools = [read_file, write_file, run_tests]
 llm_with_tools = llm.bind_tools(tools)
-tool_node = ToolNode(tools)  # handles parallel tool calls automatically
+tool_node = ToolNode(tools, handle_tool_errors=True)  # handles parallel tool calls and surfaces errors
 ```
 
 ### Topic: ReAct Agent {#t-react}
@@ -248,7 +252,7 @@ class AgentState(TypedDict):
 llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
 tools = [read_file, write_file, run_tests]
 llm_with_tools = llm.bind_tools(tools)
-tool_node = ToolNode(tools)
+tool_node = ToolNode(tools, handle_tool_errors=True)
 
 def call_model(state: AgentState) -> dict:
     response = llm_with_tools.invoke(state["messages"])

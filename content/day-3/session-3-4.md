@@ -469,7 +469,7 @@ LangGraph's Send API dispatches work to multiple graph nodes in parallel and fan
 
 ```python
 from langgraph.graph import StateGraph, START, END
-from langgraph.constants import Send
+from langgraph.types import Send
 from pydantic import BaseModel
 
 class ResearchState(BaseModel):

@@ -568,7 +568,7 @@ p.prose code{
   <div class="sidebar-header">
     <div class="sidebar-logo">Agentic AI</div>
     <div class="sidebar-title">3-Day Intensive<br/>Course</div>
-    <div class="sidebar-meta">LangChain 0.3 · LangGraph 0.2</div>
+    <div class="sidebar-meta">LangChain 1.2 · LangGraph 1.1</div>
   </div>
 
   <div class="sidebar-nav" id="sidebarNav">
@@ -923,7 +923,7 @@ p.prose code{
     └──────────────┴──────────────────────────────────────────────┘</pre></div></div>
     <p class="prose"><strong>LangGraph is the recommended choice for production work</strong> — explicit state, serializable graphs, streaming, and human-in-the-loop built in.</p>
     <div class="subtopic-heading">LangGraph Setup</div>
-    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install langgraph langchain-anthropic langchain-core</pre></div></div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;langgraph&gt;=1.1&quot; &quot;langchain-anthropic&gt;=1.4&quot; &quot;langchain-core&gt;=1.2&quot;</pre></div></div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langgraph.graph import StateGraph, START, END
     from langgraph.prebuilt import ToolNode, tools_condition
     from langchain_anthropic import ChatAnthropic
@@ -958,12 +958,13 @@ p.prose code{
 
     # Model selection guide
     MODELS = {
-        &quot;claude-haiku-4-5&quot;:  &quot;Fast classification, routing, simple tools&quot;,
+        &quot;claude-haiku-4-5-20251001&quot;:  &quot;Fast classification, routing, simple tools&quot;,
         &quot;claude-sonnet-4-6&quot;: &quot;General reasoning, coding, multi-step tasks&quot;,  # sweet spot
         &quot;claude-opus-4-6&quot;:   &quot;Complex architecture, strategic decisions, hard evals&quot;,
     }</pre></div></div>
     <div class="subtopic-heading">Using Local Models (Ollama)</div>
     <p class="prose">Ollama runs open-weight models locally — no API key, no data leaves your machine. Essential for air-gapped environments or cost-sensitive development.</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;langchain-ollama&gt;=0.2&quot;</pre></div></div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre># Install and start Ollama
     curl -fsSL https://ollama.ai/install.sh | sh
     ollama pull llama3.2          # 3B params — fast, good for tool calling
@@ -1072,7 +1073,7 @@ p.prose code{
 
     tools = [read_file, write_file, run_tests]
     llm_with_tools = llm.bind_tools(tools)
-    tool_node = ToolNode(tools)  # handles parallel tool calls automatically</pre></div></div>
+    tool_node = ToolNode(tools, handle_tool_errors=True)  # handles parallel tool calls and surfaces errors</pre></div></div>
     </div><!-- /topic -->
     <div class="topic" id="t-react"><div class="topic-heading">ReAct Agent</div>
     <p class="prose">ReAct (Reasoning + Acting) is the dominant pattern for tool-using agents. The model alternates between producing a reasoning trace and selecting an action. LangGraph makes a ReAct agent a first-class citizen.</p>
@@ -1089,7 +1090,7 @@ p.prose code{
     llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;, temperature=0)
     tools = [read_file, write_file, run_tests]
     llm_with_tools = llm.bind_tools(tools)
-    tool_node = ToolNode(tools)
+    tool_node = ToolNode(tools, handle_tool_errors=True)
 
     def call_model(state: AgentState) -&gt; dict:
         response = llm_with_tools.invoke(state[&quot;messages&quot;])
@@ -1303,7 +1304,7 @@ p.prose code{
         }
 
     # Executor: cheaper model, called once per step
-    executor_llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    executor_llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
     executor_llm_with_tools = executor_llm.bind_tools([read_file, write_file, run_tests])
 
     def executor(state: PlanExecuteState) -&gt; dict:
@@ -1435,7 +1436,7 @@ p.prose code{
                                             LLM ──▶ Answer</pre></div></div>
     <p class="prose">The key difference from "RAG for chatbots" is that in an agent, <strong>retrieval is a tool</strong> — the agent decides <em>when</em> to search, <em>what</em> to search for, and <em>how many</em> results to retrieve based on the current task state.</p>
     <div class="subtopic-heading">Setting Up a Vector Store</div>
-    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install langchain-chroma langchain-anthropic chromadb</pre></div></div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;langchain-chroma&gt;=0.2&quot; &quot;langchain-anthropic&gt;=1.4&quot; chromadb</pre></div></div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain_chroma import Chroma
     from langchain_anthropic import AnthropicEmbeddings
     from langchain_core.documents import Document
@@ -1546,7 +1547,7 @@ p.prose code{
     </div><!-- /topic -->
     <div class="topic" id="t-rageval"><div class="topic-heading">RAG Evaluation with Ragas</div>
     <p class="prose">You cannot improve what you cannot measure. Ragas is the standard library for evaluating RAG pipelines — it measures whether your retrieval is actually helping the agent answer correctly.</p>
-    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install ragas datasets</pre></div></div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;ragas&gt;=0.2&quot; datasets</pre></div></div>
     <div class="subtopic-heading">The Four Ragas Metrics</div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">TEXT</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>┌─────────────────────────────────────────────────────────────────┐
     │  RAGAS EVALUATION METRICS                                        │
@@ -1649,7 +1650,7 @@ p.prose code{
     <div class="lab-block"><div class="lab-header"><div class="lab-icon">🧪</div><div><div class="lab-label">Lab 1.3</div><div class="lab-title">Plan-and-Execute Agent with RAG</div></div></div><div class="lab-body"><ul class="lab-objectives"><li><strong>Objectives:</strong></li>
     <li>Build a Plan-and-Execute agent for: "Audit the codebase for security vulnerabilities and generate a report."</li>
     <li>Add a <code>search_knowledge_base</code> tool backed by ChromaDB (index OWASP Top-10 summaries).</li>
-    <li>Planner uses <code>claude-sonnet-4-6</code>; Executor uses <code>claude-haiku-4-5</code>.</li>
+    <li>Planner uses <code>claude-sonnet-4-6</code>; Executor uses <code>claude-haiku-4-5-20251001</code>.</li>
     <li>After the run, evaluate retrieval quality with Ragas on 5 question/answer pairs.</li>
     <li>Compare task completion: agent with RAG vs. agent without — measure difference in answer quality.</li>
     </ul></div></div>
@@ -1856,7 +1857,7 @@ p.prose code{
     # LOCAL sub-agent — runs in the same Python process
     def build_security_agent():
         &quot;&quot;&quot;Security specialist — fast, no network, shares process memory.&quot;&quot;&quot;
-        llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+        llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
         llm_with_tools = llm.bind_tools([scan_dependencies, check_secrets, audit_sql])
 
         def call_model(state):
@@ -1864,7 +1865,7 @@ p.prose code{
 
         g = StateGraph({&quot;messages&quot;: list})
         g.add_node(&quot;agent&quot;, call_model)
-        g.add_node(&quot;tools&quot;, ToolNode([scan_dependencies, check_secrets, audit_sql]))
+        g.add_node(&quot;tools&quot;, ToolNode([scan_dependencies, check_secrets, audit_sql], handle_tool_errors=True))
         g.add_edge(START, &quot;agent&quot;)
         g.add_conditional_edges(&quot;agent&quot;, tools_condition)
         g.add_edge(&quot;tools&quot;, &quot;agent&quot;)
@@ -1914,7 +1915,7 @@ p.prose code{
     └─────────────────────────────────────────────────────────────────┘</pre></div></div>
     <p class="prose">Before MCP: every agent needed custom integration code per tool. After MCP: write a tool server once, any agent uses it. Claude Code itself is an MCP client — its file system and terminal access are MCP tools under the hood.</p>
     <div class="subtopic-heading">Using MCP Servers from LangGraph</div>
-    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install langchain-mcp-adapters mcp
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;langchain-mcp-adapters&gt;=0.1&quot; mcp
     npm install -g @modelcontextprotocol/server-filesystem</pre></div></div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain_mcp_adapters.client import MultiServerMCPClient
     from langgraph.prebuilt import create_react_agent
@@ -2114,7 +2115,7 @@ p.prose code{
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain_anthropic import ChatAnthropic
     from langchain_core.messages import SystemMessage, AnyMessage
 
-    summariser = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    summariser = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
     MAX_RECENT_MESSAGES = 10
 
     def compress_history(
@@ -2241,7 +2242,7 @@ p.prose code{
         persist_directory=&quot;./memory/episodes&quot;,
     )
 
-    summariser = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    summariser = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
 
     def save_episode(task: str, messages: list, outcome: str):
         &quot;&quot;&quot;Compress a completed agent session into episodic memory.&quot;&quot;&quot;
@@ -2418,7 +2419,7 @@ p.prose code{
     <p class="prose">Without structured tracing, answering any of these questions requires guesswork.</p>
     <div class="subtopic-heading">Langfuse Integration</div>
     <p class="prose">Langfuse is the observability platform of choice for LLM applications. It captures every LLM call, tool call, and state transition with full input/output payloads, latency, and token counts.</p>
-    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install langfuse</pre></div></div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">BASH</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>pip install &quot;langfuse&gt;=2.0&quot;</pre></div></div>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langfuse.callback import CallbackHandler
     from langchain_anthropic import ChatAnthropic
     from langgraph.graph import StateGraph, START, END
@@ -2568,7 +2569,7 @@ p.prose code{
         risk_type: Literal[&quot;none&quot;, &quot;prompt_injection&quot;, &quot;jailbreak&quot;, &quot;harmful_content&quot;, &quot;pii&quot;]
         reason: str
 
-    input_guard = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    input_guard = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
     input_classifier = input_guard.with_structured_output(InputSafetyDecision)
 
     def check_input(user_input: str) -&gt; InputSafetyDecision:
@@ -2615,7 +2616,7 @@ p.prose code{
     &quot;&quot;&quot;
 
     policy_checker = (
-        ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+        ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
         .with_structured_output(PolicyDecision)
     )
 
@@ -2675,7 +2676,7 @@ p.prose code{
         filtered_response: str
 
     output_guard = (
-        ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+        ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
         .with_structured_output(OutputSafetyDecision)
     )
 
@@ -2805,9 +2806,9 @@ p.prose code{
         final_review: str
 
     # Specialised worker agents
-    security_llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
-    perf_llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
-    style_llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    security_llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
+    perf_llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
+    style_llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
     supervisor_llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;, temperature=0)
 
     async def security_worker(state: SupervisorState) -&gt; dict:
@@ -2872,7 +2873,7 @@ p.prose code{
         reasoning: str = Field(description=&quot;One sentence explaining the routing decision&quot;)
         confidence: float = Field(ge=0.0, le=1.0)
 
-    router_llm = ChatAnthropic(model=&quot;claude-haiku-4-5&quot;, temperature=0)
+    router_llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, temperature=0)
     router = router_llm.with_structured_output(RouteDecision)
 
     def route_request(state: dict) -&gt; str:
@@ -4038,7 +4039,7 @@ p.prose code{
     <div class="subtopic-heading">Parallel Nodes in LangGraph</div>
     <p class="prose">LangGraph's Send API dispatches work to multiple graph nodes in parallel and fan-in the results:</p>
     <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langgraph.graph import StateGraph, START, END
-    from langgraph.constants import Send
+    from langgraph.types import Send
     from pydantic import BaseModel
 
     class ResearchState(BaseModel):

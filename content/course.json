@@ -15,7 +15,7 @@
   "sidebar": {
     "logo": "Agentic AI",
     "title": "3-Day Intensive<br/>Course",
-    "meta": "LangChain 0.3 · LangGraph 0.2",
+    "meta": "LangChain 1.2 · LangGraph 1.1",
     "tech_pills": ["Python", "LangGraph", "Claude"]
   }
 }

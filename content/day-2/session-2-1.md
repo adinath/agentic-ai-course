@@ -327,7 +327,7 @@ from langchain_core.messages import HumanMessage
 # LOCAL sub-agent — runs in the same Python process
 def build_security_agent():
     """Security specialist — fast, no network, shares process memory."""
-    llm = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+    llm = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
     llm_with_tools = llm.bind_tools([scan_dependencies, check_secrets, audit_sql])
 
     def call_model(state):
@@ -335,7 +335,7 @@ def build_security_agent():
 
     g = StateGraph({"messages": list})
     g.add_node("agent", call_model)
-    g.add_node("tools", ToolNode([scan_dependencies, check_secrets, audit_sql]))
+    g.add_node("tools", ToolNode([scan_dependencies, check_secrets, audit_sql], handle_tool_errors=True))
     g.add_edge(START, "agent")
     g.add_conditional_edges("agent", tools_condition)
     g.add_edge("tools", "agent")
@@ -396,7 +396,7 @@ After MCP: write a tool server once, any agent uses it. Claude Code itself is an
 #### Using MCP Servers from LangGraph
 
 ```bash
-pip install langchain-mcp-adapters mcp
+pip install "langchain-mcp-adapters>=0.1" mcp
 npm install -g @modelcontextprotocol/server-filesystem
 ```
 

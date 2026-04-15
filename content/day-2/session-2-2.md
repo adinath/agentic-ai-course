@@ -107,7 +107,7 @@ When conversation history grows beyond budget, compress old messages into a summ
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage, AnyMessage
 
-summariser = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+summariser = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 MAX_RECENT_MESSAGES = 10
 
 def compress_history(
@@ -247,7 +247,7 @@ episode_store = Chroma(
     persist_directory="./memory/episodes",
 )
 
-summariser = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+summariser = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 
 def save_episode(task: str, messages: list, outcome: str):
     """Compress a completed agent session into episodic memory."""

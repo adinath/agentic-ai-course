@@ -32,7 +32,7 @@ Without structured tracing, answering any of these questions requires guesswork.
 Langfuse is the observability platform of choice for LLM applications. It captures every LLM call, tool call, and state transition with full input/output payloads, latency, and token counts.
 
 ```bash
-pip install langfuse
+pip install "langfuse>=2.0"
 ```
 
 ```python
@@ -210,7 +210,7 @@ class InputSafetyDecision(BaseModel):
     risk_type: Literal["none", "prompt_injection", "jailbreak", "harmful_content", "pii"]
     reason: str
 
-input_guard = ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+input_guard = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
 input_classifier = input_guard.with_structured_output(InputSafetyDecision)
 
 def check_input(user_input: str) -> InputSafetyDecision:
@@ -262,7 +262,7 @@ ALLOW with risk_level=medium and log:
 """
 
 policy_checker = (
-    ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+    ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
     .with_structured_output(PolicyDecision)
 )
 
@@ -326,7 +326,7 @@ class OutputSafetyDecision(BaseModel):
     filtered_response: str
 
 output_guard = (
-    ChatAnthropic(model="claude-haiku-4-5", temperature=0)
+    ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0)
     .with_structured_output(OutputSafetyDecision)
 )
 
