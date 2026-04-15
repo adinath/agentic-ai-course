@@ -6,10 +6,10 @@
     "tagline": "Agentic AI<br/>for <em>Developers</em>",
     "description": "From LLM completions to production-grade autonomous agent systems. Build, evaluate, and deploy multi-agent workflows with LangChain, LangGraph, and Claude.",
     "stats": [
-      {"value": "9", "label": "Sessions"},
-      {"value": "18h", "label": "Total time"},
-      {"value": "27+", "label": "Code examples"},
-      {"value": "9", "label": "Hands-on labs"}
+      {"value": "10", "label": "Sessions"},
+      {"value": "20h", "label": "Total time"},
+      {"value": "32+", "label": "Code examples"},
+      {"value": "10", "label": "Hands-on labs"}
     ]
   },
   "sidebar": {

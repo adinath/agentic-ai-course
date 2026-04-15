@@ -659,6 +659,17 @@ p.prose code{
             <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-present')" data-topic="t-present">Peer Review</a>
           </div>
         </div>
+        <div class="nav-session">
+          <button class="nav-session-btn" onclick="scrollToSession('s34')"><span class="nav-session-num">3.4</span><span class="nav-session-title">Extended: Agent Performance Engineering</span></button>
+          <div class="nav-topics" id="topics-34">
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-perf-problem')" data-topic="t-perf-problem">The Performance Tax</a>
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-prompt-cache')" data-topic="t-prompt-cache">Prompt Caching</a>
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-semantic-cache')" data-topic="t-semantic-cache">Semantic Caching</a>
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-model-routing')" data-topic="t-model-routing">Right-Sized Models</a>
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-async-parallel')" data-topic="t-async-parallel">Async &amp; Parallelism</a>
+            <a href="javascript:void(0)" class="nav-topic-link" onclick="scrollToTopic('t-token-budget')" data-topic="t-token-budget">Token Budget Management</a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -681,7 +692,7 @@ p.prose code{
     <h1 class="hero-title">Agentic AI<br/>for <em>Developers</em></h1>
     <p class="hero-subtitle">From LLM completions to production-grade autonomous agent systems. Build, evaluate, and deploy multi-agent workflows with LangChain, LangGraph, and Claude.</p>
     <div class="hero-stats">
-      <div class="hero-stat"><span class="hero-stat-val">9</span><span class="hero-stat-label">Sessions</span></div><div class="hero-stat"><span class="hero-stat-val">18h</span><span class="hero-stat-label">Total time</span></div><div class="hero-stat"><span class="hero-stat-val">27+</span><span class="hero-stat-label">Code examples</span></div><div class="hero-stat"><span class="hero-stat-val">9</span><span class="hero-stat-label">Hands-on labs</span></div>
+      <div class="hero-stat"><span class="hero-stat-val">10</span><span class="hero-stat-label">Sessions</span></div><div class="hero-stat"><span class="hero-stat-val">20h</span><span class="hero-stat-label">Total time</span></div><div class="hero-stat"><span class="hero-stat-val">32+</span><span class="hero-stat-label">Code examples</span></div><div class="hero-stat"><span class="hero-stat-val">10</span><span class="hero-stat-label">Hands-on labs</span></div>
     </div>
   </section>
 
@@ -2749,9 +2760,9 @@ p.prose code{
     <div class="day-banner">
       <div class="day-banner-accent" style="background:#8b5cf6"></div>
       <div class="day-banner-body">
-        <div class="day-banner-label">Day 3 · 3 Sessions</div>
+        <div class="day-banner-label">Day 3 · 4 Sessions</div>
         <div class="day-banner-title">Multi-Agent Systems</div>
-        <div class="day-banner-sub">Topologies, agent-to-agent protocols, evaluation frameworks, and capstone project</div>
+        <div class="day-banner-sub">Topologies, agent-to-agent protocols, evaluation frameworks, capstone project, and performance engineering</div>
       </div>
     </div>
     <div class="session" id="s31">
@@ -3680,6 +3691,531 @@ p.prose code{
     </ul></div></div>
     <p class="prose">---</p>
     <p class="prose"><em>Congratulations — you just went from "what is an agent" to "how do I trust this in production". The agents are watching. Make them behave.</em></p>
+    </div><!-- /topic -->
+    </div>
+
+    <div class="session-divider"></div>
+    <div class="session" id="s34">
+      <div class="session-header"><div class="session-num">3.4</div><div class="session-info"><div class="session-title">Extended: Agent Performance Engineering</div><div class="session-meta"><span>5:30–7:30 PM</span><span class="session-meta-dot"></span><span>2 hours</span><span class="session-meta-dot"></span><span>Extended Session</span></div></div></div>
+      <p class="session-desc">Your agent works. Now make it fast enough that users don't rage-quit, and cheap enough that your cloud bill doesn't trigger a board meeting. Performance engineering for agentic systems is not an afterthought — it is the difference between a demo and a product.</p>
+    <div class="topic" id="t-perf-problem"><div class="topic-heading">The Performance Tax</div>
+    <p class="prose">Every agentic interaction is a pipeline of LLM calls. Each call costs tokens; each token costs money; every round-trip costs latency. The compound effect is brutal.</p>
+    <div class="subtopic-heading">Why Agents Are Expensive By Default</div>
+    <p class="prose">A typical 10-step ReAct loop on a 5,000-token system prompt:</p>
+    <ul class="bullet-list"><li><strong>Each call</strong> re-sends the full system prompt</li><li><strong>10 calls</strong> × 5,000 tokens = 50,000 input tokens per task</li><li>At Claude Sonnet 4.6 pricing ($3/MTok input), that is <strong>$0.15 per task</strong></li><li>At 1,000 tasks/day → <strong>$150/day</strong> just in input tokens, before output</li></ul>
+    <p class="prose">The system prompt alone — with tool definitions and instructions — is often the biggest cost driver, and it is identical across every single call.</p>
+    <div class="callout warning"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">⚠️</span>The Compound Cost Trap</div><div class="callout-content">Multi-agent systems multiply this. A 5-agent pipeline where each agent has a 3,000-token system prompt and runs 5 steps internally costs <strong>5 × 3,000 × 5 = 75,000 input tokens</strong> before a single useful output token is generated. Design for cost from day one.</div></div></div>
+    <div class="subtopic-heading">The Four Performance Levers</div>
+    <ul class="bullet-list"><li><strong>Prompt Caching</strong> — pay once to store your system prompt at the API layer; subsequent calls read from cache at 10% cost (Anthropic) or 50% cost (OpenAI)</li><li><strong>Semantic Caching</strong> — store LLM responses and serve identical/similar queries from cache without hitting the LLM at all</li><li><strong>Model Routing</strong> — use the smallest model that can do the job correctly</li><li><strong>Async Parallelism</strong> — run independent steps concurrently instead of sequentially</li></ul>
+    <p class="prose">Applied together, these typically deliver <strong>3–10× cost reduction</strong> and <strong>2–5× latency improvement</strong> on real agentic workloads.</p>
+    </div><!-- /topic -->
+    <div class="topic" id="t-prompt-cache"><div class="topic-heading">Prompt Caching</div>
+    <p class="prose">Prompt caching is a server-side feature where the LLM provider stores the KV (key-value) cache for your prompt prefix, so subsequent calls that share that prefix skip the prefill computation. You pay a reduced rate for cache reads.</p>
+    <div class="subtopic-heading">How It Works</div>
+    <p class="prose">When you send a prompt:</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">TEXT</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>[System: 10,000 tokens — CACHED]
+    [Conversation history: 2,000 tokens — not cached]
+    [New user message: 50 tokens — not cached]</pre></div></div>
+    <p class="prose">The first call writes the cache (slightly more expensive). Every subsequent call with the same system prompt prefix reads from cache at a fraction of the normal cost.</p>
+    <div class="subtopic-heading">Anthropic Prompt Caching</div>
+    <p class="prose">Anthropic's implementation requires you to explicitly mark cache breakpoints using <code>cache_control</code>. This gives you control over <em>exactly</em> what gets cached.</p>
+    <p class="prose"><strong>Source:</strong> https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching</p>
+    <p class="prose"><strong>Pricing (as of April 2026):</strong></p>
+    <ul class="bullet-list"><li>Cache write: 125% of standard input token price (slight overhead to populate cache)</li><li>Cache read: 10% of standard input token price (<strong>90% discount</strong>)</li><li>Cache TTL: 5 minutes (resets on every hit)</li><li>Minimum cacheable block: 1,024 tokens (Sonnet/Haiku), 2,048 tokens (Opus)</li></ul>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>import anthropic
+    from pathlib import Path
+
+    client = anthropic.Anthropic()
+
+    # Load your stable system prompt — tool definitions, domain knowledge, rules.
+    # The longer this is, the bigger the savings.
+    SYSTEM_PROMPT = Path(&quot;agent_system_prompt.txt&quot;).read_text()  # e.g. 5,000+ tokens
+
+    def agent_call(user_message: str, conversation_history: list[dict] | None = None) -&gt; str:
+        &quot;&quot;&quot;Call Claude with prompt caching on the system prompt.&quot;&quot;&quot;
+        messages = conversation_history or []
+        messages.append({&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: user_message})
+
+        response = client.messages.create(
+            model=&quot;claude-sonnet-4-6&quot;,
+            max_tokens=2048,
+            system=[
+                {
+                    &quot;type&quot;: &quot;text&quot;,
+                    &quot;text&quot;: SYSTEM_PROMPT,
+                    # Mark this block for caching.
+                    # Everything up to this breakpoint will be cached.
+                    &quot;cache_control&quot;: {&quot;type&quot;: &quot;ephemeral&quot;},
+                }
+            ],
+            messages=messages,
+        )
+
+        # Inspect cache utilisation — log this in production (Langfuse/Langsmith)
+        usage = response.usage
+        cache_write = getattr(usage, &quot;cache_creation_input_tokens&quot;, 0)
+        cache_read  = getattr(usage, &quot;cache_read_input_tokens&quot;, 0)
+        regular     = usage.input_tokens
+
+        print(f&quot;Tokens | write: {cache_write:&gt;6} | read: {cache_read:&gt;6} | regular: {regular:&gt;6}&quot;)
+
+        return response.content[0].text</pre></div></div>
+    <div class="subtopic-heading">Caching Multiple Breakpoints</div>
+    <p class="prose">You can cache up to <strong>4 breakpoints</strong> in a single request. This is useful for caching tool definitions separately from conversation history:</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>import anthropic
+
+    client = anthropic.Anthropic()
+
+    # Large, stable tool definitions (often 2,000–4,000 tokens)
+    TOOL_DEFINITIONS = load_tool_definitions()  # returns list[dict]
+
+    # Domain knowledge (e.g. a runbook, code base summary)
+    DOMAIN_KNOWLEDGE = load_domain_knowledge()  # long string
+
+    def agent_call_multi_cache(user_message: str, recent_history: list[dict]) -&gt; str:
+        response = client.messages.create(
+            model=&quot;claude-sonnet-4-6&quot;,
+            max_tokens=2048,
+            system=[
+                {
+                    &quot;type&quot;: &quot;text&quot;,
+                    &quot;text&quot;: DOMAIN_KNOWLEDGE,
+                    &quot;cache_control&quot;: {&quot;type&quot;: &quot;ephemeral&quot;},  # Breakpoint 1
+                }
+            ],
+            tools=TOOL_DEFINITIONS,
+            # Pass tool_choice to enable tool use
+            tool_choice={&quot;type&quot;: &quot;auto&quot;},
+            messages=[
+                # Cache the first N turns of a long conversation
+                *[
+                    {**msg, &quot;cache_control&quot;: {&quot;type&quot;: &quot;ephemeral&quot;}}
+                    if i == len(recent_history) - 4  # Breakpoint at turn N-4
+                    else msg
+                    for i, msg in enumerate(recent_history)
+                ],
+                {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: user_message},
+            ],
+        )
+        return response.content</pre></div></div>
+    <div class="subtopic-heading">OpenAI Prompt Caching</div>
+    <p class="prose">OpenAI's implementation is automatic — no explicit marking required. Inputs of 1,024+ tokens are eligible. Cache discount is 50% (vs Anthropic's 90%).</p>
+    <p class="prose"><strong>Source:</strong> https://platform.openai.com/docs/guides/prompt-caching</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from openai import OpenAI
+
+    client = OpenAI()
+
+    # OpenAI caches automatically — just structure your prompt with the
+    # stable prefix first and the dynamic content last.
+    response = client.chat.completions.create(
+        model=&quot;gpt-4o&quot;,
+        messages=[
+            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: LONG_STABLE_SYSTEM_PROMPT},  # Cached automatically
+            {&quot;role&quot;: &quot;user&quot;,   &quot;content&quot;: dynamic_user_message},        # Dynamic — not cached
+        ],
+    )
+
+    # Check cache usage in response
+    print(response.usage.prompt_tokens_details)
+    # PromptTokensDetails(cached_tokens=4096, audio_tokens=0)</pre></div></div>
+    <div class="callout tip"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">💡</span>Structuring Prompts for Maximum Cache Hits</div><div class="callout-content">Place the most stable, longest content <strong>first</strong> (system prompt, tool definitions, domain knowledge). Put dynamic content (user message, current date, session-specific context) <strong>last</strong>. The cache only applies to prefixes — if you put dynamic content first, you break the cache on every call.</div></div></div>
+    <div class="subtopic-heading">Savings Estimator</div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>def estimate_prompt_cache_savings(
+        system_prompt_tokens: int,
+        calls_per_day: int,
+        input_price_per_mtok: float = 3.0,  # Claude Sonnet 4.6 price
+    ) -&gt; dict:
+        &quot;&quot;&quot;Calculate projected daily savings from enabling prompt caching.&quot;&quot;&quot;
+        # Without cache: every call pays full price for the system prompt
+        cost_without_cache = (system_prompt_tokens / 1_000_000) * input_price_per_mtok * calls_per_day
+
+        # With cache: first call is a write (125%), rest are reads (10%)
+        cost_first_call = (system_prompt_tokens / 1_000_000) * input_price_per_mtok * 1.25
+        cost_reads = (system_prompt_tokens / 1_000_000) * input_price_per_mtok * 0.10 * (calls_per_day - 1)
+        cost_with_cache = cost_first_call + cost_reads
+
+        return {
+            &quot;without_cache_usd&quot;: round(cost_without_cache, 4),
+            &quot;with_cache_usd&quot;:    round(cost_with_cache, 4),
+            &quot;savings_usd&quot;:       round(cost_without_cache - cost_with_cache, 4),
+            &quot;savings_pct&quot;:       round((1 - cost_with_cache / cost_without_cache) * 100, 1),
+        }
+
+    # Example: 5,000-token system prompt, 500 calls/day
+    result = estimate_prompt_cache_savings(5_000, 500)
+    # → {&#x27;savings_pct&#x27;: 86.3, &#x27;savings_usd&#x27;: 0.638, &#x27;without_cache_usd&#x27;: 0.750, ...}</pre></div></div>
+    <div class="callout info"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">📘</span>Cache TTL and Warm-up</div><div class="callout-content">The Anthropic cache TTL is <strong>5 minutes</strong>, reset on every hit. For agents with bursty traffic, this works well. For cron-style agents that run once per hour, the cache will be cold most of the time — calculate your actual hit rate before projecting savings.</div></div></div>
+    </div><!-- /topic -->
+    <div class="topic" id="t-semantic-cache"><div class="topic-heading">Semantic Caching</div>
+    <p class="prose">Prompt caching saves on repeated calls with the <em>same</em> system prompt. Semantic caching goes further: it stores LLM <em>responses</em> and returns cached answers for <em>semantically similar</em> queries — no LLM call needed at all.</p>
+    <div class="subtopic-heading">LangChain Semantic Cache</div>
+    <p class="prose">LangChain's caching layer wraps any LLM. Set it once at startup and all subsequent calls route through the cache automatically.</p>
+    <p class="prose"><strong>Source:</strong> https://python.langchain.com/docs/how_to/llm_caching/</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain.globals import set_llm_cache
+    from langchain_community.cache import InMemorySemanticCache
+    from langchain_openai import OpenAIEmbeddings
+    from langchain_anthropic import ChatAnthropic
+
+    # One-time setup — embeddings model converts queries to vectors for similarity search
+    embeddings = OpenAIEmbeddings(model=&quot;text-embedding-3-small&quot;)
+
+    set_llm_cache(
+        InMemorySemanticCache(
+            embedding=embeddings,
+            # Similarity threshold: 0.95 = very conservative (near-exact match only)
+            # 0.85 = more aggressive (similar but not identical queries hit cache)
+            # Tune based on acceptable staleness for your use case
+            score_threshold=0.95,
+        )
+    )
+
+    # All LLM calls through this instance automatically use the cache
+    llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;)
+
+    # First call — cache miss, calls LLM and stores response
+    response1 = llm.invoke(&quot;What is the capital of France?&quot;)
+
+    # Second call — exact match, returns cached response instantly (0ms LLM latency)
+    response2 = llm.invoke(&quot;What is the capital of France?&quot;)
+
+    # Third call — semantic match at 0.97 similarity, returns cached response
+    response3 = llm.invoke(&quot;What&#x27;s France&#x27;s capital city?&quot;)</pre></div></div>
+    <p class="prose">For production, replace <code>InMemorySemanticCache</code> with <code>RedisSemanticCache</code> (persists across restarts, shared across instances):</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain_community.cache import RedisSemanticCache
+    from langchain_openai import OpenAIEmbeddings
+
+    embeddings = OpenAIEmbeddings(model=&quot;text-embedding-3-small&quot;)
+
+    # Redis + vector similarity — survives restarts, sharable across multiple agent instances
+    set_llm_cache(
+        RedisSemanticCache(
+            redis_url=&quot;redis://localhost:6379&quot;,
+            embedding=embeddings,
+            score_threshold=0.95,
+        )
+    )</pre></div></div>
+    <div class="subtopic-heading">GPTCache — Dedicated Caching Layer</div>
+    <p class="prose">For higher-volume deployments, GPTCache is a standalone caching library designed specifically for LLM workloads. It supports multiple similarity backends (FAISS, Milvus, Hnswlib) and adapters for LangChain and direct API clients.</p>
+    <p class="prose"><strong>Source:</strong> https://github.com/zilliztech/GPTCache</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from gptcache import cache
+    from gptcache.adapter import openai  # Drop-in OpenAI replacement
+    from gptcache.embedding import Onnx
+    from gptcache.manager import CacheBase, VectorBase, get_data_manager
+    from gptcache.similarity_evaluation.distance import SearchDistanceEvaluation
+
+    # Initialise GPTCache with FAISS backend
+    onnx = Onnx()
+    data_manager = get_data_manager(
+        CacheBase(&quot;sqlite&quot;),          # Metadata store
+        VectorBase(&quot;faiss&quot;, dimension=onnx.dimension),  # Vector store
+    )
+
+    cache.init(
+        embedding_func=onnx.to_embeddings,
+        data_manager=data_manager,
+        similarity_evaluation=SearchDistanceEvaluation(),
+    )
+    cache.set_openai_key()  # Uses OPENAI_API_KEY env var
+
+    # Use gptcache&#x27;s openai adapter — same API as openai.OpenAI()
+    response = openai.ChatCompletion.create(
+        model=&quot;gpt-4o&quot;,
+        messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;What is the capital of France?&quot;}],
+    )</pre></div></div>
+    <div class="subtopic-heading">When Semantic Caching Helps vs Hurts</div>
+    <ul class="bullet-list"><li><strong>Helps:</strong> FAQ-style queries, repeated lookups in the same domain, classification tasks, extraction from stable templates</li><li><strong>Hurts / avoid:</strong> Real-time data queries ("what is the current BTC price?"), queries that depend on user context or session state, creative generation where diversity is the point</li><li><strong>Threshold tuning:</strong> Start at 0.95 (conservative). Monitor cache hit rate and false positives in production before lowering.</li></ul>
+    <div class="callout warning"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">⚠️</span>Semantic Cache Staleness</div><div class="callout-content">A cached response from 3 months ago may be wrong today. Tag cached entries with a creation timestamp and TTL. Invalidate the cache when your underlying data changes. For agent tools (search, database queries), prefer prompt caching or model routing over semantic caching — those tools exist specifically because the answer can change.</div></div></div>
+    </div><!-- /topic -->
+    <div class="topic" id="t-model-routing"><div class="topic-heading">Right-Sized Models</div>
+    <p class="prose">The most impactful single performance decision is <strong>which model you use for each task</strong>. Claude Haiku 4.5 is ~20× cheaper per token than Claude Opus 4.6 and ~3× faster. For tasks that don't require deep reasoning, using Opus is like hiring a senior architect to rename a variable.</p>
+    <div class="subtopic-heading">Model Selection Matrix</div>
+    <p class="prose">Use this framework to pick the right model for each operation in your agent:</p>
+    <ul class="bullet-list"><li><strong>Haiku 4.5</strong> — Classification, entity extraction, simple Q&A, routing decisions, yes/no guards, formatting, JSON extraction from structured text. Anything where the "thinking" is minimal.</li><li><strong>Sonnet 4.6</strong> — Code generation, summarisation, multi-step reasoning, tool use orchestration, RAG synthesis. The default for most agentic tasks.</li><li><strong>Opus 4.6</strong> — Complex multi-step planning, cross-document reasoning, research synthesis, architect-level decisions, tasks requiring nuanced judgment. Use sparingly.</li></ul>
+    <div class="subtopic-heading">Dynamic Model Routing in LangGraph</div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from typing import Literal
+    from langchain_anthropic import ChatAnthropic
+    from langgraph.graph import StateGraph, END
+    from pydantic import BaseModel
+
+    # Pre-initialise model clients at startup — avoids per-call overhead
+    MODELS = {
+        &quot;fast&quot;:     ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, max_tokens=512),
+        &quot;balanced&quot;: ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;,         max_tokens=2048),
+        &quot;powerful&quot;: ChatAnthropic(model=&quot;claude-opus-4-6&quot;,           max_tokens=4096),
+    }
+
+    # Use Haiku to classify task complexity — cheap, fast, accurate enough
+    ROUTER = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;, max_tokens=10)
+
+    class AgentState(BaseModel):
+        task: str
+        tier: str = &quot;&quot;
+        result: str = &quot;&quot;
+
+    def classify_task(state: AgentState) -&gt; AgentState:
+        &quot;&quot;&quot;Route to the correct model tier based on task complexity.&quot;&quot;&quot;
+        prompt = (
+            &quot;Classify the complexity of this task as exactly one word: simple, medium, or complex.\n&quot;
+            f&quot;Task: {state.task}\n&quot;
+            &quot;Reply with only the word.&quot;
+        )
+        tier = ROUTER.invoke(prompt).content.strip().lower()
+        # Sanitise — only accept known tiers
+        if tier not in (&quot;simple&quot;, &quot;medium&quot;, &quot;complex&quot;):
+            tier = &quot;medium&quot;  # Safe default
+
+        tier_map = {&quot;simple&quot;: &quot;fast&quot;, &quot;medium&quot;: &quot;balanced&quot;, &quot;complex&quot;: &quot;powerful&quot;}
+        return state.model_copy(update={&quot;tier&quot;: tier_map[tier]})
+
+    def execute_task(state: AgentState) -&gt; AgentState:
+        &quot;&quot;&quot;Execute the task using the routed model.&quot;&quot;&quot;
+        llm = MODELS[state.tier]
+        result = llm.invoke(state.task).content
+        return state.model_copy(update={&quot;result&quot;: result})
+
+    # Build the routing graph
+    graph = StateGraph(AgentState)
+    graph.add_node(&quot;classify&quot;, classify_task)
+    graph.add_node(&quot;execute&quot;, execute_task)
+    graph.set_entry_point(&quot;classify&quot;)
+    graph.add_edge(&quot;classify&quot;, &quot;execute&quot;)
+    graph.add_edge(&quot;execute&quot;, END)
+
+    agent = graph.compile()
+
+    # Example usage
+    result = agent.invoke(AgentState(task=&quot;What is 2 + 2?&quot;))
+    print(f&quot;Model tier used: {result[&#x27;tier&#x27;]}&quot;)   # → fast (Haiku)
+    print(f&quot;Result: {result[&#x27;result&#x27;]}&quot;)</pre></div></div>
+    <div class="subtopic-heading">RouteLLM — Learned Routing</div>
+    <p class="prose">For high-volume deployments, Stanford's RouteLLM trains a small classifier that learns <em>from your data</em> when strong vs weak models are needed. It consistently achieves 2–4× cost reduction with <5% quality loss on real benchmarks.</p>
+    <p class="prose"><strong>Source:</strong> https://github.com/lm-sys/RouteLLM</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre># pip install routellm
+    from routellm.controller import Controller
+
+    # Controller wraps two models: strong (expensive) and weak (cheap)
+    controller = Controller(
+        routers=[&quot;mf&quot;],  # Matrix Factorisation router
+        strong_model=&quot;claude-opus-4-6&quot;,
+        weak_model=&quot;claude-haiku-4-5-20251001&quot;,
+    )
+
+    # threshold=0.11856 means &quot;use strong model only when confidence is high&quot;
+    # This was calibrated by RouteLLM to cut GPT-4 calls by 40% with minimal quality loss
+    response = controller.chat.completions.create(
+        model=&quot;router-mf-0.11856&quot;,
+        messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: user_query}],
+    )</pre></div></div>
+    <div class="callout tip"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">💡</span>Cost vs Quality Trade-off</div><div class="callout-content">There is no universal answer to which model to use. Run an offline eval on your specific task distribution. Measure quality at each tier. Accept quality loss only where you can quantify that it does not affect user outcomes. "Haiku for classification, Sonnet for generation, Opus for planning" is a sensible starting default, not a law.</div></div></div>
+    </div><!-- /topic -->
+    <div class="topic" id="t-async-parallel"><div class="topic-heading">Async &amp; Parallelism</div>
+    <p class="prose">Sequential tool calls compound latency. If your agent reads 5 documents before writing a summary, those reads can run in parallel. Python's <code>asyncio</code> and LangGraph's native async support make this straightforward.</p>
+    <div class="subtopic-heading">Parallel LLM Calls with asyncio</div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>import asyncio
+    from langchain_anthropic import ChatAnthropic
+
+    llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;)
+
+    # BAD: sequential — total latency = sum of all call latencies
+    async def summarise_sequential(documents: list[str]) -&gt; list[str]:
+        results = []
+        for doc in documents:
+            result = await llm.ainvoke(f&quot;Summarise in one sentence: {doc}&quot;)
+            results.append(result.content)
+        return results  # Latency: N × avg_call_latency
+
+    # GOOD: parallel — total latency ≈ max single call latency
+    async def summarise_parallel(documents: list[str]) -&gt; list[str]:
+        tasks = [
+            llm.ainvoke(f&quot;Summarise in one sentence: {doc}&quot;)
+            for doc in documents
+        ]
+        results = await asyncio.gather(*tasks)
+        return [r.content for r in results]  # Latency: ~1× avg_call_latency
+
+    # For 5 documents averaging 1.5s each:
+    # Sequential: ~7.5s  |  Parallel: ~1.7s  (includes overhead)</pre></div></div>
+    <div class="subtopic-heading">Parallel Nodes in LangGraph</div>
+    <p class="prose">LangGraph's Send API dispatches work to multiple graph nodes in parallel and fan-in the results:</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langgraph.graph import StateGraph, START, END
+    from langgraph.constants import Send
+    from pydantic import BaseModel
+
+    class ResearchState(BaseModel):
+        query: str
+        sources: list[str] = []
+        summaries: list[str] = []
+        final_report: str = &quot;&quot;
+
+    async def fetch_sources(state: ResearchState) -&gt; dict:
+        &quot;&quot;&quot;Fan-out: dispatch one summarisation task per source in parallel.&quot;&quot;&quot;
+        return [
+            Send(&quot;summarise_source&quot;, {&quot;source&quot;: src, &quot;query&quot;: state.query})
+            for src in state.sources
+        ]
+
+    async def summarise_source(state: dict) -&gt; dict:
+        &quot;&quot;&quot;Worker: summarise one source. Runs in parallel with other workers.&quot;&quot;&quot;
+        llm = ChatAnthropic(model=&quot;claude-haiku-4-5-20251001&quot;)  # Cheap for extraction
+        summary = await llm.ainvoke(
+            f&quot;Extract facts relevant to &#x27;{state[&#x27;query&#x27;]}&#x27; from: {state[&#x27;source&#x27;]}&quot;
+        )
+        return {&quot;summaries&quot;: [summary.content]}
+
+    async def write_report(state: ResearchState) -&gt; dict:
+        &quot;&quot;&quot;Fan-in: all summaries are available, write the final report.&quot;&quot;&quot;
+        llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;)  # Better model for synthesis
+        combined = &quot;\n---\n&quot;.join(state.summaries)
+        report = await llm.ainvoke(f&quot;Write a report for &#x27;{state.query}&#x27; using: {combined}&quot;)
+        return {&quot;final_report&quot;: report.content}
+
+    # Build graph with parallel fan-out
+    graph = StateGraph(ResearchState)
+    graph.add_node(&quot;fetch_sources&quot;, fetch_sources)
+    graph.add_node(&quot;summarise_source&quot;, summarise_source)
+    graph.add_node(&quot;write_report&quot;, write_report)
+
+    graph.add_conditional_edges(&quot;fetch_sources&quot;, lambda s: s, [&quot;summarise_source&quot;])
+    graph.add_edge(&quot;summarise_source&quot;, &quot;write_report&quot;)
+    graph.set_entry_point(&quot;fetch_sources&quot;)
+    graph.add_edge(&quot;write_report&quot;, END)</pre></div></div>
+    <div class="subtopic-heading">Concurrency Limits</div>
+    <p class="prose">Unbounded parallelism will hit rate limits or overwhelm downstream services. Use <code>asyncio.Semaphore</code> to cap concurrent calls:</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>import asyncio
+    from langchain_anthropic import ChatAnthropic
+
+    llm = ChatAnthropic(model=&quot;claude-sonnet-4-6&quot;)
+    # Cap at 5 concurrent LLM calls to stay within rate limits
+    SEMAPHORE = asyncio.Semaphore(5)
+
+    async def rate_limited_call(prompt: str) -&gt; str:
+        async with SEMAPHORE:
+            result = await llm.ainvoke(prompt)
+            return result.content
+
+    async def process_batch(prompts: list[str]) -&gt; list[str]:
+        tasks = [rate_limited_call(p) for p in prompts]
+        return await asyncio.gather(*tasks)</pre></div></div>
+    </div><!-- /topic -->
+    <div class="topic" id="t-token-budget"><div class="topic-heading">Token Budget Management</div>
+    <p class="prose">Every token you send is a token you pay for. System prompts bloat over time as developers append edge cases. Context windows fill with stale history. Output tokens are often unbounded when they should not be.</p>
+    <div class="subtopic-heading">Audit Your System Prompt</div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>import anthropic
+
+    client = anthropic.Anthropic()
+
+    def audit_prompt_token_cost(system_prompt: str, model: str = &quot;claude-sonnet-4-6&quot;) -&gt; dict:
+        &quot;&quot;&quot;Count tokens in your system prompt before committing to it.&quot;&quot;&quot;
+        response = client.messages.count_tokens(
+            model=model,
+            system=system_prompt,
+            messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;ping&quot;}],
+        )
+        price_per_mtok = 3.0  # Claude Sonnet 4.6 — check docs for current pricing
+        tokens = response.input_tokens
+        daily_cost_at_1k_calls = (tokens / 1_000_000) * price_per_mtok * 1_000
+
+        return {
+            &quot;tokens&quot;: tokens,
+            &quot;estimated_daily_cost_usd_at_1k_calls&quot;: round(daily_cost_at_1k_calls, 4),
+            &quot;tip&quot;: &quot;Enable prompt caching if tokens &gt; 1024 and calls &gt; 100/day&quot;,
+        }</pre></div></div>
+    <div class="subtopic-heading">Cap Response Length Per Operation</div>
+    <p class="prose">Not every step in your agent needs a 4,096-token response. A routing decision needs 10 tokens. A yes/no guard needs 5. An extraction step needs however many tokens the extracted JSON is — rarely more than 512.</p>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from anthropic import Anthropic
+
+    client = Anthropic()
+
+    # Routing decision: tiny budget
+    def classify_intent(user_message: str) -&gt; str:
+        response = client.messages.create(
+            model=&quot;claude-haiku-4-5-20251001&quot;,
+            max_tokens=20,  # 20 tokens is plenty for a single-word classification
+            messages=[
+                {
+                    &quot;role&quot;: &quot;user&quot;,
+                    &quot;content&quot;: f&quot;Classify as: search, calculate, create, or other.\nInput: {user_message}\nReply with ONE word.&quot;
+                }
+            ],
+        )
+        return response.content[0].text.strip().lower()
+
+    # Data extraction: bounded by structure
+    def extract_entities(text: str) -&gt; dict:
+        response = client.messages.create(
+            model=&quot;claude-haiku-4-5-20251001&quot;,
+            max_tokens=512,  # JSON with 5-10 fields won&#x27;t exceed this
+            messages=[
+                {
+                    &quot;role&quot;: &quot;user&quot;,
+                    &quot;content&quot;: f&quot;Extract name, date, and amount as JSON. Text: {text}&quot;
+                }
+            ],
+        )
+        import json
+        return json.loads(response.content[0].text)
+
+    # Final user-facing answer: generous budget
+    def answer_question(question: str, context: str) -&gt; str:
+        response = client.messages.create(
+            model=&quot;claude-sonnet-4-6&quot;,
+            max_tokens=1024,  # Enough for a thorough answer, not an essay
+            messages=[
+                {
+                    &quot;role&quot;: &quot;user&quot;,
+                    &quot;content&quot;: f&quot;Answer concisely using only the context provided.\nContext: {context}\nQuestion: {question}&quot;
+                }
+            ],
+        )
+        return response.content[0].text</pre></div></div>
+    <div class="subtopic-heading">Context Window Hygiene</div>
+    <div class="code-block"><div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span class="code-lang">PYTHON</span><button class="code-copy" onclick="copyCode(this)">copy</button></div><div class="code-body"><pre>from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+
+    def trim_conversation_history(
+        messages: list[BaseMessage],
+        max_tokens: int = 8_000,
+        tokenizer_fn=None,
+    ) -&gt; list[BaseMessage]:
+        &quot;&quot;&quot;
+        Keep the system message + most recent N exchanges that fit within max_tokens.
+        Drops oldest turns first. Never drops the system message.
+        &quot;&quot;&quot;
+        if not messages:
+            return messages
+
+        # Always keep system message
+        system = [m for m in messages if isinstance(m, SystemMessage)]
+        non_system = [m for m in messages if not isinstance(m, SystemMessage)]
+
+        # Rough token estimate: 4 chars ≈ 1 token (good enough for trimming heuristic)
+        def estimate_tokens(m: BaseMessage) -&gt; int:
+            return len(m.content) // 4
+
+        total = sum(estimate_tokens(m) for m in system)
+        kept = []
+
+        # Walk backwards — keep most recent messages
+        for msg in reversed(non_system):
+            cost = estimate_tokens(msg)
+            if total + cost &gt; max_tokens:
+                break
+            kept.insert(0, msg)
+            total += cost
+
+        return system + kept</pre></div></div>
+    <div class="callout tip"><div class="callout-bar"></div><div class="callout-body"><div class="callout-title"><span class="icon">💡</span>The Three Rules of Token Hygiene</div><div class="callout-content"><strong>1. Measure before you optimise.</strong> Use <code>client.messages.count_tokens()</code> (Anthropic) or tiktoken (OpenAI) to know your actual token counts — not guesses.<br/>
+    <strong>2. Set <code>max_tokens</code> on every call.</strong> Leaving it at default (<code>4096</code>) on a routing step is like ordering a full dinner when you just want the check.<br/>
+    <strong>3. Compress before you truncate.</strong> Summarise old conversation turns into a single "conversation summary" message rather than dropping them entirely. Dropped context = hallucinated context.</div></div></div>
+    <div class="lab-block"><div class="lab-header"><div class="lab-icon">🧪</div><div><div class="lab-label">Lab 3.4</div><div class="lab-title">Performance Audit Sprint</div></div></div><div class="lab-body"><ul class="lab-objectives"><li><strong>Objectives:</strong></li>
+    <li>Instrument your capstone agent with token usage logging (read + write + cache tokens per call).</li>
+    <li>Enable Anthropic prompt caching on the system prompt and measure the savings using the estimator function.</li>
+    <li>Add a model routing layer: classify tasks as simple/medium/complex and route to Haiku/Sonnet/Opus accordingly.</li>
+    <li>Wrap at least two parallel tool calls with <code>asyncio.gather</code> instead of sequential await.</li>
+    <li>Run the agent 10 times and record: total tokens per run, cache hit rate, p95 latency before and after.</li>
+    <li>Target: ≥40% reduction in input token cost, ≥30% reduction in p95 latency.</li>
+    </ul></div></div>
+    <p class="prose">---</p>
+    <p class="prose"><em>Performance engineering is not about making your agent faster at the wrong thing. Measure first. Optimise the bottleneck. Ship it. Measure again. The cycle never ends — but at least now your cloud bill won't require a separate line item in the quarterly report.</em></p>
     </div><!-- /topic -->
     </div>
   </div><!-- /day3 -->

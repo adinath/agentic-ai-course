@@ -84,7 +84,7 @@ body {
 
 /* Standard */
 .slide-content {
-  align-items: flex-start;
+  align-items: center;
 }
 
 /* ── CHROME ── */
@@ -1002,6 +1002,132 @@ GET /tasks/{id}/stream  →       SSE: working → completed + result</div>
   </div>
 </div>
 
+<!-- ─────────── 3.4 EXTENDED SESSION BREAK ─────────── -->
+<div class="slide slide-day" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Day Three · Extended</p>
+  <h2 class="day-title" style="color:var(--amber)">Agent Performance<br/>Engineering</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:520px;">Four levers that turn a working agent into a production-ready one: prompt caching, semantic caching, right-sized models, and async parallelism.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Prompt Caching</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Semantic Cache</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Model Routing</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Async Parallel</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Token Budgets</span>
+  </div>
+</div>
+
+<!-- ─────────── 3.4a THE PERFORMANCE TAX ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">The Performance Tax</h2>
+  <div class="diagram" style="margin-bottom:16px;">10-step ReAct agent · 5,000-token system prompt
+
+Per call:    5,000 tokens × $3/MTok  =  $0.015
+10 calls:    $0.015 × 10             =  $0.15 / task
+1,000/day:   $0.15 × 1,000           =  $150 / day  ← just input tokens
+
+Multi-agent (5 agents × 3,000 tokens × 5 steps):
+             75,000 input tokens before a single output token</div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title">Four Levers</div>
+      <p>
+        <strong style="color:var(--white)">Prompt Caching</strong> — 90% off repeated system prompts<br/>
+        <strong style="color:var(--white)">Semantic Cache</strong> — skip the LLM for similar queries<br/>
+        <strong style="color:var(--white)">Model Routing</strong> — Haiku for simple, Opus for hard<br/>
+        <strong style="color:var(--white)">Async Parallel</strong> — N steps in 1× latency, not N×
+      </p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">The Compound Cost Trap</div>
+      <p>Each agent in a multi-agent pipeline re-sends its own system prompt on every step. 5 agents × large system prompts = 5× the baseline cost before any work is done.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.4b PROMPT CACHING ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Prompt Caching <span style="color:var(--text3);font-size:.6em;font-family:var(--ff-body);">Anthropic / OpenAI</span></h2>
+  <div class="compare" style="margin-bottom:14px;">
+    <div class="compare-col" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);">
+      <div class="compare-head" style="background:rgba(245,158,11,.12);color:var(--amber)">Anthropic — Explicit</div>
+      <div class="compare-body">
+        Mark blocks with <code>cache_control: ephemeral</code><br/>
+        Cache write: 125% of normal price<br/>
+        Cache read: <strong style="color:var(--white)">10% of normal price (90% off)</strong><br/>
+        TTL: 5 min, resets on each hit<br/>
+        Min: 1,024 tokens (Sonnet/Haiku)
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--blue)">OpenAI — Automatic</div>
+      <div class="compare-body">
+        No code changes required<br/>
+        Stable prefix ≥ 1,024 tokens is eligible<br/>
+        Cache hit: <strong style="color:var(--white)">50% off input tokens</strong><br/>
+        Shown in <code>prompt_tokens_details.cached_tokens</code>
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">Structure rule</div>
+    <p>Stable content first (system prompt, tool defs, domain knowledge). Dynamic content last (user message, date, session ID). Reversing this order breaks the cache on every call.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.4c MODEL ROUTING ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Right-Sized Models</h2>
+  <div class="grid-3" style="margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Haiku 4.5 — Fast</div>
+      <p>Classification · Extraction · Routing decisions · Yes/no guards · JSON parsing · Simple Q&amp;A<br/><br/><strong style="color:var(--white)">~20× cheaper than Opus</strong></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue)">
+      <div class="card-title" style="color:var(--blue)">Sonnet 4.6 — Balanced</div>
+      <p>Code generation · Summarisation · Multi-step reasoning · Tool orchestration · RAG synthesis<br/><br/><strong style="color:var(--white)">Default for agentic tasks</strong></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-title" style="color:var(--purple)">Opus 4.6 — Powerful</div>
+      <p>Complex planning · Cross-document reasoning · Research synthesis · Nuanced judgment<br/><br/><strong style="color:var(--white)">Use sparingly</strong></p>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">RouteLLM (Stanford)</div>
+    <p>Learned routing classifier trained on your data. Consistently achieves <strong style="color:var(--white)">2–4× cost reduction</strong> with &lt;5% quality loss. Source: github.com/lm-sys/RouteLLM</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.4d SEMANTIC CACHE + ASYNC ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Semantic Cache &amp; Async Parallelism</h2>
+  <div class="grid-2" style="max-width:760px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-title">Semantic Caching</div>
+      <p>Store LLM responses, serve similar queries from cache — <strong style="color:var(--white)">zero LLM calls</strong> for cache hits.<br/><br/>
+      LangChain: <code>InMemorySemanticCache</code> / <code>RedisSemanticCache</code><br/>
+      threshold=0.95 → conservative (near-exact)<br/>
+      threshold=0.85 → aggressive (similar queries)<br/><br/>
+      ⚠ Use TTLs. Stale answers are wrong answers.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-title">Async Parallelism</div>
+      <p>Sequential N steps = N× latency.<br/>Parallel N steps ≈ 1× latency.<br/><br/>
+      <code>asyncio.gather(*tasks)</code> — fan-out multiple LLM calls<br/>
+      LangGraph <code>Send</code> API — parallel nodes with fan-in<br/>
+      <code>asyncio.Semaphore(5)</code> — cap concurrency to avoid rate limits<br/><br/>
+      5 docs @ 1.5s each: <strong style="color:var(--white)">7.5s → 1.7s</strong></p>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">Lab 3.4 — Performance Audit</div>
+    <p>Instrument your capstone: log token usage per call · enable prompt caching · add model routing · parallelise tool calls. Target: ≥40% token cost reduction · ≥30% p95 latency reduction.</p>
+  </div>
+</div>
+
 <!-- ─────────── CLOSING ─────────── -->
 <div class="slide slide-cover" data-day="0">
   <p class="eyebrow" style="color:var(--cyan)">End of Course</p>
@@ -1013,6 +1139,7 @@ GET /tasks/{id}/stream  →       SSE: working → completed + result</div>
       <tr><td>Week 2–3</td><td>Add memory to your agent</td><td>Day 2.2 episodic + semantic</td></tr>
       <tr><td>Month 1</td><td>Scale to multi-agent (only if needed)</td><td>Day 3.1 topology patterns</td></tr>
       <tr><td>Month 2</td><td>Evaluate and harden — 80% pass rate</td><td>Day 3.2 eval harness</td></tr>
+      <tr><td>Month 3</td><td>Optimise for cost + latency in production</td><td>Day 3.4 prompt caching + model routing</td></tr>
     </tbody>
   </table>
 </div>
