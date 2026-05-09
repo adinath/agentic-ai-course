@@ -2854,6 +2854,294 @@ define flow competitor guard
   </div>
 </div>
 
+<!-- ─────────── 3.1b·i SUPERVISOR → WORKER ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #1</p>
+  <h2 class="slide-title"><span style="color:var(--d1);">Supervisor → Worker</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Fan-out, Fan-in</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                ┌────────────────────┐
+                │     SUPERVISOR     │   decompose task,
+                │   plans · dispatch │   pick N workers
+                └──┬──────┬──────┬───┘
+          ┌────────┘      │      └────────┐
+          ▼               ▼               ▼
+     ┌─────────┐     ┌─────────┐     ┌─────────┐
+     │ WORKER  │     │ WORKER  │     │ WORKER  │   parallel,
+     │    A    │     │    B    │     │    C    │   isolated,
+     └────┬────┘     └────┬────┘     └────┬────┘   no shared state
+          └───────────────┼───────────────┘
+                          ▼
+                ┌────────────────────┐
+                │     AGGREGATOR     │   merge results →
+                │  rules · LLM judge │   single answer
+                └────────────────────┘</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Genuinely parallel</div>
+      <p>Subtasks are independent and embarrassingly parallel — multi-source research, fan-out review by domain (legal · finance · eng), batch document processing where order doesn't matter.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Step-wise dependencies</div>
+      <p>Worker B needs Worker A's output. The task is a chain, not a star. A single ReAct agent already converges on the answer — adding workers only multiplies cost.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">N× cost · merge fragility</div>
+      <p>Every worker re-sends its system prompt. One slow worker stalls the supervisor. One bad worker poisons the merged answer. Partial failures need a story.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Bound · contract · time-box</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">asyncio.Semaphore(N)</code> caps concurrency. Force structured outputs (Pydantic) so the aggregator can't be tricked. Per-worker timeout + retry. Make the supervisor plain code wherever the plan is known.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·ii ROUTER → EXPERT ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #2</p>
+  <h2 class="slide-title"><span style="color:var(--teal);">Router → Expert</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— One Door, Many Rooms</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                       ┌────────────────────┐
+   user query ───────▶ │      ROUTER        │   cheap classifier:
+                       │  Haiku · regex ·   │   pick exactly ONE
+                       │  embedding KNN     │   expert (or fallback)
+                       └──┬─────┬─────┬─────┘
+                          │     │     │
+                  billing │     │     │ refunds
+                          │ tech│     │
+                ┌─────────┘     │     └────────┐
+                ▼               ▼               ▼
+           ┌─────────┐     ┌─────────┐     ┌──────────┐
+           │ EXPERT  │     │ EXPERT  │     │ FALLBACK │
+           │ Billing │     │  Tech   │     │  human / │
+           │         │     │ Support │     │  default │
+           └─────────┘     └─────────┘     └──────────┘
+                only the chosen expert pays the LLM cost</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Disjoint, well-known categories</div>
+      <p>Customer support triage. Multi-skill assistant (code · math · sql). Cost-sensitive paths where you want only the right specialist to load and pay.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Fuzzy or overlapping intents</div>
+      <p>The query spans two domains. Categories drift weekly. You need an ensembled answer, not a single verdict. Routing accuracy &lt; 80% — the system is now strictly worse than one strong agent.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Mis-routes are silent</div>
+      <p>A wrong route returns a confident wrong answer — no error, just bad UX. Categories rot as the product evolves. New intent types have nowhere to go and quietly fail.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Make routing a first-class signal</div>
+      <p>Log <code style="font-family:var(--ff-mono);font-size:.78em;">{intent, confidence}</code> to Langfuse on every call. Always have a default-fallback expert. Treat each mis-route as an eval case. Confidence &lt; threshold → escalate to a stronger router or hand off to human.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·iii ORCHESTRATOR ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #3</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">Orchestrator</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— The Plan Is the Output</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">             ┌──────────────────────┐
+      task ──▶ │    ORCHESTRATOR      │ ◄── reads each result,
+             │  LLM planner / policy  │     picks next step
+             └───────────┬────────────┘
+                         │
+                  ┌──────▼───────┐
+                  │ call Agent A │   step 1 (always)
+                  └──────┬───────┘
+                         │ result + confidence
+              ┌──────────▼───────────┐
+              │   branching logic    │   conf < 0.7  → call Agent B
+              │  (typed next-action) │   needs data  → call Agent C
+              └──┬─────────┬─────────┘   done         → answer
+                 ▼         ▼
+            Agent B    Agent C   ─── results loop back ▲</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Adaptive, long-horizon work</div>
+      <p>The next step truly depends on the current finding — incident triage, deep research, dynamic data pipelines. The plan can't be drawn on a whiteboard ahead of time.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">You already know the steps</div>
+      <p>A fixed extract-then-summarise flow. Latency-critical chat. A simple ReAct or pipeline already converges. Adding an orchestrator just adds non-determinism and tokens.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Non-determinism · loops · drift</div>
+      <p>Same input, different paths, different cost. Easy to thrash between two agents. Hard to reproduce a production bug. Context bloats turn-over-turn until quality collapses.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Budgets · enums · replay</div>
+      <p>Hard step budget (e.g. 12 turns). Make <code style="font-family:var(--ff-mono);font-size:.78em;">next_action</code> a typed enum, not free text. Persist every decision as a Langfuse trace. Replay traces in CI as eval cases — your bugs become regressions.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·iv ROUND TABLE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #4</p>
+  <h2 class="slide-title"><span style="color:var(--purple);">Round Table</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Many Voices, One Verdict</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                         TASK / QUESTION
+                                │
+              ┌─────────────────┴─────────────────┐
+              ▼                                   ▼
+         ┌─────────┐    shared scratchpad    ┌─────────┐
+         │ AGENT A │ ◄────── chat  ───────▶  │ AGENT B │
+         │   PM    │                         │   Sec   │
+         └────┬────┘                         └────┬────┘
+              │           ┌─────────┐             │
+              └────────▶  │ AGENT C │  ◄──────────┘
+                          │  Arch   │
+                          └────┬────┘
+                               ▼
+                       ┌────────────────┐
+                       │   MODERATOR    │   rubric scoring,
+                       │   synthesise   │   not popularity vote
+                       └────────────────┘</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Diverse perspectives matter</div>
+      <p>Architecture / design review (PM · security · architect). Critique-and-revise loops. Adversarial / red-team setups where one agent attacks and another defends.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Single domain · tight latency</div>
+      <p>Cost-sensitive paths. The question has one right answer. Real-time chat (round-tables are slow). The agents will sycophantically agree on turn one anyway.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Cost explodes · groupthink</div>
+      <p>N agents × M turns × full transcript = O(N·M²) tokens. LLMs lean toward agreement — diversity collapses fast. Genuine conflict has no judge unless you build one.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Force diversity · cap rounds</div>
+      <p>Distinct system prompts and explicit roles. Mix models / temperatures / seeds so agents start in different places. Hard cap turns (3–5). The moderator scores against a written rubric — never "majority wins".</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·v TREE OF AGENTS ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #5</p>
+  <h2 class="slide-title"><span style="color:var(--cyan);">Tree of Agents</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Recursive Decomposition</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                       ┌──────┐
+                       │ ROOT │   decompose huge task
+                       └──┬───┘
+                  ┌───────┴────────┐
+                  ▼                ▼
+              ┌──────┐         ┌──────┐
+              │ NODE │         │ NODE │   sub-decompose,
+              └──┬───┘         └──┬───┘   pick subtree size
+              ┌──┴──┐           ┌─┴──┐
+              ▼     ▼           ▼    ▼
+           ┌────┐┌────┐      ┌────┐┌────┐
+           │LEAF││LEAF│      │LEAF││LEAF│   leaves do real
+           └─┬──┘└─┬──┘      └─┬──┘└─┬──┘   LLM work
+             └────┴──────┬─────┴─────┘
+                         ▲
+                  results bubble up,
+                  merged at every node</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Massive · recursively splittable</div>
+      <p>Whole-codebase review. Multi-document research over a corpus. Hierarchical tasks where summary-of-summaries makes sense (book summarisation, audit reports).</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Flat or unbounded tasks</div>
+      <p>The task doesn't shrink as you split it. Depth has no natural floor. Latency budget is tight — trees serialise on the longest branch and are slow by design.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Exponential cost · lossy merge</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">branch ^ depth</code> LLM calls in the worst case. Each merge step loses detail; one weak leaf taints its parent and silently propagates upward.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Bound depth · monoid merge</div>
+      <p>Hard <code style="font-family:var(--ff-mono);font-size:.78em;">max_depth</code> and <code style="font-family:var(--ff-mono);font-size:.78em;">max_branch</code>. Inner nodes are deterministic merge code, only leaves call the LLM. Define a <em>monoid</em> merge fn (associative + identity). Early-terminate when confidence saturates.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·vi PIPELINE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #6</p>
+  <h2 class="slide-title"><span style="color:var(--green);">Pipeline</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Assembly Line for Agents</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:820px;font-size:.74rem;">           ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+  input ──▶ │ STAGE 1 │ ─▶ │ STAGE 2 │ ─▶ │ STAGE 3 │ ─▶ │ STAGE 4 │ ──▶ output
+           │ extract │    │classify │    │ enrich  │    │  write  │
+           └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘
+                │              │              │              │
+                ▼              ▼              ▼              ▼
+            ckpt 1         ckpt 2         ckpt 3         ckpt 4    ─▶ retry from
+                                                                       any stage
+        ─── typed Pydantic contract enforced at every boundary ───</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Ordered, deterministic stages</div>
+      <p>Document → extract → classify → enrich → write. ETL with LLM steps inside. Compliance / batch jobs where reproducibility is non-negotiable. The flowchart was easy to draw.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">You need branching or feedback</div>
+      <p>Stage 4 has to call back into Stage 2. The path varies per input. Real-time conversational use. Pipelines hate cycles — bend one in and you've reinvented an Orchestrator, badly.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Errors propagate · schemas drift</div>
+      <p>Stage 2's output shape changes and silently breaks Stage 3. One stage's failure rolls everything back. No retry from the middle without infra. Garbage in, garbage all the way out.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Typed contracts · checkpoints · DLQ</div>
+      <p>Pydantic model at every stage boundary. Each stage is idempotent and stateless. Persist intermediate results so you can retry from stage <em>N</em>. Dead-letter queue for poison rows — pipeline never blocks on one bad input.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.1b·vii TOPOLOGY DECISION GUIDE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Wrap-up</p>
+  <h2 class="slide-title">Choosing a Topology <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— a 30-second decision tree</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:820px;font-size:.74rem;">  Can a single ReAct agent do it well?    ──▶ YES ──▶  STOP. Do not fan out.
+                  │ NO
+                  ▼
+  Are subtasks independent and parallel?   ──▶ YES ──▶  Supervisor → Worker
+                  │ NO
+                  ▼
+  Are categories disjoint and well-known?  ──▶ YES ──▶  Router → Expert
+                  │ NO
+                  ▼
+  Is the order fixed and deterministic?    ──▶ YES ──▶  Pipeline
+                  │ NO
+                  ▼
+  Does the task split recursively?         ──▶ YES ──▶  Tree of Agents
+                  │ NO
+                  ▼
+  Do you need diverse perspectives?        ──▶ YES ──▶  Round Table
+                  │ NO
+                  ▼
+  Plan emerges from intermediate results   ──▶ YES ──▶  Orchestrator
+                                                       (last resort — most expensive)</div>
+  <div class="callout border-d3" style="max-width:780px;">
+    <div class="callout-title d3">Universal complexity rules</div>
+    <p>Every topology pays the same three taxes — <strong style="color:var(--white)">cost amplification</strong>, <strong style="color:var(--white)">non-determinism</strong>, and <strong style="color:var(--white)">debug surface area</strong>. Manage them with the same three tools: <em>typed contracts</em> at every agent boundary, <em>hard budgets</em> on turns and tokens, and <em>full Langfuse traces</em> replayed as eval cases. Skip any one of these and the topology will quietly outrun your ability to reason about it.</p>
+  </div>
+</div>
+
 <!-- ─────────── 3.2a A2A ─────────── -->
 <div class="slide slide-content" data-day="3">
   <p class="eyebrow d3">Session 3.2</p>
