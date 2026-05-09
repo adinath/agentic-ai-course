@@ -1624,6 +1624,150 @@ body {
   </div>
 </div>
 
+<!-- ─────────── 2.1d·i HARNESS ENGINEERING — CONCEPT ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Harness Engineering</p>
+  <h2 class="slide-title">Harness Engineering — <em style="color:var(--cyan);font-style:italic;">Agent = Model + Harness</em></h2>
+  <div class="callout border-d2" style="margin-bottom:14px;max-width:840px;">
+    <div class="callout-title d2">The trust gap, made explicit</div>
+    <p>LLMs are non-deterministic, don't know your codebase, and think in tokens — not in your domain. The <strong style="color:var(--white)">harness</strong> is everything around the model that closes that gap: the rules, skills, MCPs, linters, tests, and review agents that <em>steer</em> it before it acts and <em>catch</em> it after. Rules, commands &amp; skills aren't the harness — they're its <em>building blocks</em>.</p>
+  </div>
+  <div class="agent-arch" style="max-width:780px;">
+    <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Harness layers: model, builder harness, user harness">
+      <defs>
+        <marker id="harn-arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="6" y="6" width="748" height="228" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="20" y="24" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">YOUR HARNESS · YOUR PROBLEM</text>
+
+      <ellipse cx="200" cy="120" rx="170" ry="92" fill="rgba(20,184,166,.06)" stroke="#14b8a6" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <ellipse cx="200" cy="120" rx="115" ry="68" fill="rgba(34,211,238,.07)" stroke="#22d3ee" stroke-width="1.6"/>
+      <ellipse cx="200" cy="120" rx="60" ry="40" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="1.8"/>
+
+      <text x="200" y="118" text-anchor="middle" fill="#fff" font-family="DM Serif Display, serif" font-size="18" font-weight="700">Model</text>
+      <text x="200" y="135" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">tokens in / out</text>
+      <text x="200" y="80" text-anchor="middle" fill="#22d3ee" font-family="Outfit, sans-serif" font-size="11" font-weight="600">Builder Harness</text>
+      <text x="200" y="184" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9">system prompt · retrieval · orchestration</text>
+      <text x="200" y="48" text-anchor="middle" fill="#14b8a6" font-family="Outfit, sans-serif" font-size="12" font-weight="700">User Harness  ← you build this</text>
+      <text x="200" y="208" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9">rules · skills · MCPs · linters · review agents</text>
+
+      <rect x="430" y="38" width="306" height="70" rx="8" fill="rgba(34,211,238,.06)" stroke="rgba(34,211,238,.4)"/>
+      <text x="445" y="58" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">FEEDFORWARD · GUIDES</text>
+      <text x="445" y="76" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">steer the agent <tspan fill="#fff" font-weight="600">before</tspan> it acts</text>
+      <text x="445" y="93" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">AGENTS.md · skills · LSP · codemods</text>
+
+      <rect x="430" y="132" width="306" height="70" rx="8" fill="rgba(20,184,166,.06)" stroke="rgba(20,184,166,.4)"/>
+      <text x="445" y="152" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">FEEDBACK · SENSORS</text>
+      <text x="445" y="170" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">observe <tspan fill="#fff" font-weight="600">after</tspan> it acts → self-correct</text>
+      <text x="445" y="187" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">linters · tests · review agents · SLOs</text>
+
+      <path d="M 370 72 L 426 72" stroke="#94a3b8" stroke-width="1.4" fill="none" marker-end="url(#harn-arr)"/>
+      <path d="M 426 168 Q 380 168 360 150" stroke="#94a3b8" stroke-width="1.4" fill="none" marker-end="url(#harn-arr)"/>
+    </svg>
+  </div>
+  <p style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);margin-top:10px;letter-spacing:.05em;">Birgitta Böckeler · martinfowler.com/articles/harness-engineering · Apr 2026</p>
+</div>
+
+<!-- ─────────── 2.1d·ii GUIDES vs SENSORS · COMPUTATIONAL vs INFERENTIAL ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Harness Engineering</p>
+  <h2 class="slide-title">Two Axes — <em style="color:var(--cyan);font-style:italic;">Direction</em> &amp; <em style="color:var(--cyan);font-style:italic;">Execution</em></h2>
+  <div class="callout border-d2" style="margin-bottom:14px;max-width:820px;">
+    <div class="callout-title d2">You need all four cells</div>
+    <p>Feedforward-only and the agent never finds out whether the rules worked. Feedback-only and it repeats the same mistakes. Computational catches structure cheaply; inferential catches semantics expensively. <strong style="color:var(--white)">The strongest harness mixes all four.</strong></p>
+  </div>
+  <div class="grid-2" style="max-width:860px;">
+    <div class="card" style="border-top:3px solid var(--d1)">
+      <div class="card-num">FEEDFORWARD · COMPUTATIONAL</div>
+      <div class="card-title" style="color:var(--d1);">Deterministic guides</div>
+      <p>Type systems, language servers, <code style="font-family:var(--ff-mono);font-size:.78em;">.editorconfig</code>, codemods, scaffolding scripts, framework conventions. <strong style="color:var(--white)">Cheap, reliable, every run.</strong> Reduces the variety the agent <em>can</em> produce in the first place.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">FEEDFORWARD · INFERENTIAL</div>
+      <div class="card-title" style="color:var(--purple);">LLM-readable guides</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">AGENTS.md</code> · <code style="font-family:var(--ff-mono);font-size:.78em;">CLAUDE.md</code> · skills · how-tos · architecture docs · MCPs that surface team knowledge. Slower &amp; non-deterministic, but encode <em>intent</em> the type system can't.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-num">FEEDBACK · COMPUTATIONAL</div>
+      <div class="card-title" style="color:var(--teal);">Deterministic sensors</div>
+      <p>Linters, type-checkers, unit tests, ArchUnit, dep-cruiser, mutation testing, coverage gates. Best when their messages are <em>written for the agent</em> — embed the fix instructions in the error.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">FEEDBACK · INFERENTIAL</div>
+      <div class="card-title" style="color:var(--amber);">Semantic sensors</div>
+      <p>Review agents, LLM-as-judge, response-quality samplers, log-anomaly detectors, "garbage collection" agents that scan for drift. Expensive — schedule them off the hot path.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.1d·iii THREE REGULATION CATEGORIES ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Harness Engineering</p>
+  <h2 class="slide-title">Three Things to Regulate <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— and how mature the tooling is</span></h2>
+  <div class="grid-3" style="max-width:880px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">MATURITY · HIGH</div>
+      <div class="card-title" style="color:var(--green);">Maintainability Harness</div>
+      <p>Internal code quality: duplication, complexity, coverage, style, drift. <strong style="color:var(--white)">Decades of pre-existing tooling</strong> — linters, type-checkers, test runners, ArchUnit. Plug them in and they pay back immediately.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">MATURITY · EMERGING</div>
+      <div class="card-title" style="color:var(--amber);">Architecture Fitness Harness</div>
+      <p>Non-functional characteristics: performance, observability, security posture, resilience. Encoded as <strong style="color:var(--white)">fitness functions</strong> — perf-test deltas, log-quality skills, dependency rules. Workable, but mostly bespoke per team.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">MATURITY · OPEN PROBLEM</div>
+      <div class="card-title" style="color:var(--rose);">Behaviour Harness</div>
+      <p>Does the app actually do what the user wanted? Today: spec in, AI-written tests out — too much faith in AI-generated tests. <strong style="color:var(--white)">Approved-fixtures</strong> and human-curated acceptance suites help, but the gap is real. <em>This is where supervision still earns its keep.</em></p>
+    </div>
+  </div>
+  <div class="callout border-d2" style="margin-top:14px;max-width:820px;">
+    <div class="callout-title d2">Harnessability is a property of your codebase</div>
+    <p>Strong types, clear module boundaries, mature frameworks → easy to harness. Untyped, monolithic, legacy → the harness is hardest to build exactly where it's most needed. <strong style="color:var(--white)">Greenfield teams should design for harnessability on day one.</strong></p>
+  </div>
+</div>
+
+<!-- ─────────── 2.1d·iv STEERING LOOP · KEEP QUALITY LEFT ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Harness Engineering</p>
+  <h2 class="slide-title">The Steering Loop — <em style="color:var(--cyan);font-style:italic;">Keep Quality Left</em></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:880px;font-size:.72rem;">  GUIDES (feedforward)              SENSORS (feedback)              SCOPE
+  ─────────────────────             ────────────────────             ─────
+  AGENTS.md, skills, LSP    ─▶ AGENT ─▶  linters, type-check,        PRE-COMMIT
+  ref docs, codemods                     unit tests, /code-review        cheap · every change
+                                              │
+                                              ▼  fixes self-applied
+                                         human review                 PRE-INTEGRATION
+                                              │                            judgment · social accountability
+                                              ▼
+                                  ─── INTEGRATION ───
+                                              │
+                                              ▼
+                                         rerun fast sensors           POST-INTEGRATION
+                                         + mutation tests, /detailed-review   broader · slower
+                                         + /architecture-review
+                                              │
+                                              ▼
+                                  CONTINUOUS DRIFT &amp; HEALTH          OFF-PATH
+                                  /find-dead-code · dependabot              run on a schedule
+                                  /coverage-quality · log-anomalies         feeds new commits
+                                  SLO watchers · janitor agents</div>
+  <div class="grid-3" style="max-width:880px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Spread checks by cost</div>
+      <p>Fast &amp; cheap → run on every keystroke. Slow &amp; expensive → run post-integration. The earlier a sensor fires, the cheaper the fix — same logic as continuous integration, applied to agent output.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Iterate the harness, not just the prompt</div>
+      <p>When the same mistake recurs, don't re-prompt — <strong style="color:var(--white)">add a guide or a sensor</strong>. Coding agents themselves make custom linters and structural tests cheap to write. Steering is the human's real job.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Aim humans at the hard part</div>
+      <p>A good harness doesn't replace human review — it <em>redirects</em> it. Computational sensors handle structure; inferential sensors handle most semantics; <strong style="color:var(--white)">humans handle correctness, intent, and trade-offs</strong>.</p>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────── 2.1e MCP ─────────── -->
 <div class="slide slide-content" data-day="2">
   <p class="eyebrow d2">Session 2.1</p>
@@ -1840,6 +1984,250 @@ body {
   </div>
 </div>
 
+<!-- ─────────── 2.1j AGENT SKILLS — ANATOMY ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Agent Skills</p>
+  <h2 class="slide-title"><span style="color:var(--cyan);">Agent Skills</span> — Knowledge in a Folder</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Agent Skill anatomy: a folder containing SKILL.md, scripts, references and assets, with SKILL.md preview showing YAML frontmatter and markdown body">
+      <defs>
+        <marker id="skl-arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#22d3ee"/></marker>
+      </defs>
+
+      <rect x="6" y="6" width="748" height="288" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+
+      <!-- LEFT: folder layout -->
+      <text x="30" y="30" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SKILL FOLDER</text>
+      <rect x="20" y="40" width="320" height="248" rx="10" fill="rgba(20,184,166,.05)" stroke="#14b8a6" stroke-width="1.4"/>
+
+      <text x="38" y="68" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="13">📁 my-skill/</text>
+
+      <text x="58" y="94" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="12">├── 📄 SKILL.md</text>
+      <rect x="218" y="82" width="74" height="16" rx="3" fill="rgba(20,184,166,.2)" stroke="#14b8a6" stroke-width="0.8"/>
+      <text x="255" y="93" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" letter-spacing="1.2">REQUIRED</text>
+
+      <text x="58" y="118" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="12">├── 📁 scripts/</text>
+      <text x="220" y="118" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">optional · executable</text>
+      <text x="80" y="138" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="11">│   ├── lint.sh</text>
+      <text x="80" y="156" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="11">│   └── coverage.py</text>
+
+      <text x="58" y="180" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="12">├── 📁 references/</text>
+      <text x="220" y="180" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">optional · docs</text>
+      <text x="80" y="200" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="11">│   └── style-guide.md</text>
+
+      <text x="58" y="224" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="12">└── 📁 assets/</text>
+      <text x="220" y="224" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">optional · templates</text>
+      <text x="80" y="244" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="11">    └── template.md</text>
+
+      <text x="38" y="274" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10" font-style="italic">just a folder · version-controlled · portable</text>
+
+      <!-- Arrow connecting SKILL.md to its preview -->
+      <path d="M 295 89 Q 360 89 388 70" stroke="#22d3ee" stroke-width="1.4" fill="none" stroke-dasharray="3 3" marker-end="url(#skl-arr)"/>
+      <text x="350" y="80" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">the heart</text>
+
+      <!-- RIGHT: SKILL.md preview -->
+      <text x="410" y="30" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SKILL.md</text>
+      <rect x="400" y="40" width="340" height="248" rx="10" fill="#0f1524" stroke="#22d3ee" stroke-width="1.4"/>
+
+      <!-- File header bar -->
+      <rect x="400" y="40" width="340" height="22" rx="10" fill="rgba(34,211,238,.12)"/>
+      <circle cx="416" cy="51" r="3" fill="#f43f5e"/>
+      <circle cx="428" cy="51" r="3" fill="#f59e0b"/>
+      <circle cx="440" cy="51" r="3" fill="#10b981"/>
+      <text x="600" y="55" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">SKILL.md</text>
+
+      <!-- YAML frontmatter section (highlighted) -->
+      <rect x="412" y="72" width="316" height="92" rx="6" fill="rgba(20,184,166,.08)" stroke="#14b8a6" stroke-width="0.8" stroke-dasharray="3 2"/>
+      <text x="422" y="88" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="11">---</text>
+      <text x="422" y="106" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11"><tspan fill="#22d3ee">name</tspan>: pr-review</text>
+      <text x="422" y="124" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11"><tspan fill="#22d3ee">description</tspan>: Reviews PRs for</text>
+      <text x="422" y="138" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">  security, tests, and style.</text>
+      <text x="422" y="156" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="11">---</text>
+      <text x="722" y="88" text-anchor="end" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" letter-spacing="1.2">METADATA</text>
+
+      <!-- Markdown body -->
+      <text x="422" y="184" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700"># How to Review a PR</text>
+      <text x="422" y="204" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">1. Fetch diff via `gh pr diff`</text>
+      <text x="422" y="222" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">2. Run scripts/lint.sh</text>
+      <text x="422" y="240" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">3. Check tests ≥ 80% coverage</text>
+      <text x="422" y="258" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">4. Post inline comments</text>
+      <text x="722" y="184" text-anchor="end" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" letter-spacing="1.2">INSTRUCTIONS</text>
+
+      <text x="412" y="280" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10" font-style="italic">YAML frontmatter for discovery · markdown body for execution</text>
+    </svg>
+  </div>
+  <div class="callout border-d2" style="margin-top:12px;background:rgba(20,184,166,.05);">
+    <div class="callout-title d2">Anthropic spec · open standard</div>
+    <p>Adopted by <strong style="color:var(--white)">Claude · Cursor · GitHub Copilot · VS Code · Codex · Gemini CLI · OpenHands · Goose</strong> and 25+ others. Author once, run anywhere.</p>
+  </div>
+</div>
+
+<!-- ─────────── 2.1k PROGRESSIVE DISCLOSURE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · Progressive Disclosure</p>
+  <h2 class="slide-title">How Agents Load Skills — <em style="color:var(--cyan);font-style:italic;">3 Stages</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Progressive disclosure: Discovery loads only metadata, Activation loads matched SKILL.md, Execution loads scripts and references on demand">
+      <defs>
+        <marker id="pd-arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#22d3ee"/></marker>
+      </defs>
+
+      <rect x="6" y="6" width="748" height="308" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+
+      <!-- ════ STAGE 1: DISCOVERY ════ -->
+      <rect x="20" y="34" width="222" height="252" rx="10" fill="rgba(16,185,129,.06)" stroke="#10b981" stroke-width="1.5"/>
+      <text x="34" y="56" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">1 · DISCOVERY</text>
+      <text x="34" y="72" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">at startup</text>
+
+      <!-- Mini metadata cards -->
+      <rect x="32" y="86" width="198" height="28" rx="5" fill="rgba(255,255,255,.04)" stroke="#2a3a5c"/>
+      <text x="42" y="100" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">pr-review</text>
+      <text x="42" y="111" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">reviews PRs for security…</text>
+
+      <rect x="32" y="120" width="198" height="28" rx="5" fill="rgba(255,255,255,.04)" stroke="#2a3a5c"/>
+      <text x="42" y="134" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">deploy-k8s</text>
+      <text x="42" y="145" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">ships code to k8s clusters…</text>
+
+      <rect x="32" y="154" width="198" height="28" rx="5" fill="rgba(255,255,255,.04)" stroke="#2a3a5c"/>
+      <text x="42" y="168" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">incident-runbook</text>
+      <text x="42" y="179" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">handles SEV-1 outages…</text>
+
+      <rect x="32" y="188" width="198" height="28" rx="5" fill="rgba(255,255,255,.04)" stroke="#2a3a5c"/>
+      <text x="42" y="202" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">doc-style</text>
+      <text x="42" y="213" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">enforces tone-of-voice…</text>
+
+      <text x="131" y="240" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">name + description only</text>
+      <text x="131" y="258" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">≈ 50 tokens × N skills</text>
+      <text x="131" y="274" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">tiny baseline footprint</text>
+
+      <!-- Arrow 1→2 -->
+      <path d="M 244 160 L 268 160" stroke="#22d3ee" stroke-width="1.6" fill="none" marker-end="url(#pd-arr)"/>
+      <text x="256" y="148" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700">match</text>
+
+      <!-- ════ STAGE 2: ACTIVATION ════ -->
+      <rect x="270" y="34" width="222" height="252" rx="10" fill="rgba(245,158,11,.06)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="284" y="56" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">2 · ACTIVATION</text>
+      <text x="284" y="72" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">task matches a skill</text>
+
+      <!-- Highlighted active skill (full SKILL.md) -->
+      <rect x="282" y="86" width="198" height="120" rx="5" fill="rgba(245,158,11,.14)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="292" y="100" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">▼ pr-review</text>
+      <text x="292" y="115" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">reviews PRs for security…</text>
+      <line x1="292" y1="122" x2="470" y2="122" stroke="#f59e0b" stroke-width="0.6" stroke-dasharray="2 2"/>
+      <text x="292" y="136" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">1. Fetch diff via gh</text>
+      <text x="292" y="150" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">2. Run scripts/lint.sh</text>
+      <text x="292" y="164" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">3. Check coverage ≥ 80%</text>
+      <text x="292" y="178" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">4. Post inline comments</text>
+      <text x="292" y="195" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">…</text>
+
+      <!-- Other skills remain compact -->
+      <rect x="282" y="212" width="198" height="20" rx="4" fill="rgba(255,255,255,.03)" stroke="#2a3a5c"/>
+      <text x="292" y="225" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">deploy-k8s · still metadata only</text>
+      <rect x="282" y="234" width="198" height="20" rx="4" fill="rgba(255,255,255,.03)" stroke="#2a3a5c"/>
+      <text x="292" y="247" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">incident-runbook · still metadata</text>
+
+      <text x="381" y="270" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">+ full SKILL.md (only 1)</text>
+
+      <!-- Arrow 2→3 -->
+      <path d="M 494 160 L 518 160" stroke="#22d3ee" stroke-width="1.6" fill="none" marker-end="url(#pd-arr)"/>
+      <text x="506" y="148" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700">need more</text>
+
+      <!-- ════ STAGE 3: EXECUTION ════ -->
+      <rect x="520" y="34" width="222" height="252" rx="10" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="534" y="56" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">3 · EXECUTION</text>
+      <text x="534" y="72" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">agent runs the steps</text>
+
+      <!-- Active skill (compressed) -->
+      <rect x="532" y="86" width="198" height="44" rx="5" fill="rgba(245,158,11,.14)" stroke="#f59e0b" stroke-width="1.2"/>
+      <text x="542" y="100" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">pr-review · running</text>
+      <text x="542" y="116" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">step 2 → exec lint.sh</text>
+
+      <!-- Script box (loaded on demand) -->
+      <rect x="532" y="138" width="198" height="40" rx="5" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="542" y="152" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">📄 scripts/lint.sh</text>
+      <text x="542" y="167" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">read &amp; run · subprocess</text>
+
+      <!-- Reference box (loaded on demand) -->
+      <rect x="532" y="186" width="198" height="40" rx="5" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="542" y="200" fill="#fff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">📄 references/style-guide.md</text>
+      <text x="542" y="215" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">loaded into context · just-in-time</text>
+
+      <text x="631" y="248" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">+ scripts &amp; refs on demand</text>
+      <text x="631" y="266" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">only what the step needs</text>
+      <text x="631" y="282" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">no bloat · no waste</text>
+
+      <!-- Footer caption -->
+      <text x="380" y="306" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="10" font-style="italic">many skills available · only the matching one expanded · only the needed files loaded</text>
+    </svg>
+  </div>
+  <div class="callout border-d2" style="margin-top:10px;">
+    <div class="callout-title d2">Why this matters</div>
+    <p>You can hand an agent <strong style="color:var(--white)">100 skills</strong> for under 5K tokens of metadata. The model self-selects the right one and reads its body only when needed — context window stays clean, expertise stays vast.</p>
+  </div>
+</div>
+
+<!-- ─────────── 2.1l MCP × SKILLS ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.1 · MCP × Skills</p>
+  <h2 class="slide-title">MCP vs Skills — <em style="color:var(--cyan);font-style:italic;">Complementary, Not Either-Or</em></h2>
+
+  <table class="ref-table" style="margin-bottom:14px;max-width:780px;">
+    <thead>
+      <tr>
+        <th style="width:18%">Dimension</th>
+        <th style="width:41%;color:var(--amber)">MCP — the hands</th>
+        <th style="width:41%;color:var(--cyan)">Skills — the brain</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Layer</td><td>Transport / wire protocol</td><td>Knowledge / workflow package</td></tr>
+      <tr><td>Format</td><td>JSON-RPC over stdio / streamable HTTP</td><td>Folder of markdown · <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">SKILL.md</code></td></tr>
+      <tr><td>Provides</td><td>Tools · resources · prompts</td><td>Instructions · scripts · references</td></tr>
+      <tr><td>Loaded</td><td>Connection live for whole session</td><td>Progressive disclosure (3 stages)</td></tr>
+      <tr><td>Lives</td><td>External process · local or remote</td><td>In the LLM context window</td></tr>
+      <tr><td>Authored by</td><td>Platform / SRE / vendor</td><td>Domain expert · team lead</td></tr>
+      <tr><td>Answers</td><td><strong style="color:var(--white)">CAN</strong> the agent reach the system?</td><td><strong style="color:var(--white)">SHOULD</strong> the agent do these steps?</td></tr>
+    </tbody>
+  </table>
+
+  <div class="agent-arch" style="padding:10px 14px;">
+    <svg viewBox="0 0 760 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Skill calls MCP tools: pr-review skill instructs the agent to use github MCP tools">
+      <defs>
+        <marker id="cmp-arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#22d3ee"/></marker>
+        <marker id="cmp-arr-a" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#f59e0b"/></marker>
+      </defs>
+
+      <!-- Skill box -->
+      <rect x="20" y="14" width="300" height="102" rx="8" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width="1.4"/>
+      <text x="34" y="32" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SKILL · pr-review</text>
+      <text x="34" y="54" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">1. <tspan fill="#f59e0b">github.get_diff</tspan>(pr_id)</text>
+      <text x="34" y="74" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">2. run <tspan fill="#22d3ee">scripts/lint.sh</tspan></text>
+      <text x="34" y="94" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">3. <tspan fill="#f59e0b">github.post_review</tspan>(...)</text>
+      <text x="34" y="110" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9" font-style="italic">tells the agent WHAT to do</text>
+
+      <!-- MCP box -->
+      <rect x="440" y="14" width="300" height="102" rx="8" fill="rgba(245,158,11,.08)" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="454" y="32" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">MCP SERVERS</text>
+      <text x="454" y="54" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">github · get_diff · post_review</text>
+      <text x="454" y="74" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">filesystem · read · write</text>
+      <text x="454" y="94" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11">postgres · query · schema</text>
+      <text x="454" y="110" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9" font-style="italic">gives the agent HANDS to do it</text>
+
+      <!-- Composition arrow -->
+      <line x1="322" y1="56" x2="438" y2="56" stroke="#22d3ee" stroke-width="1.6" marker-end="url(#cmp-arr)"/>
+      <text x="380" y="50" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">calls</text>
+
+      <line x1="438" y1="80" x2="322" y2="80" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#cmp-arr-a)"/>
+      <text x="380" y="94" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9">returns data</text>
+    </svg>
+  </div>
+
+  <div class="callout border-d2" style="margin-top:12px;background:rgba(20,184,166,.06);">
+    <div class="callout-title d2">Take-home</div>
+    <p>A skill tells the agent <strong style="color:var(--white)">what</strong> to do; MCP gives it the <strong style="color:var(--white)">hands</strong> to actually do it. <em>Don't pick — compose.</em> Capability without competence is reckless. Competence without capability is just advice.</p>
+  </div>
+</div>
+
 <!-- ─────────── 2.2a CONTEXT ENGINEERING ─────────── -->
 <div class="slide slide-content" data-day="2">
   <p class="eyebrow d2">Session 2.2</p>
@@ -1888,6 +2276,118 @@ body {
   </div>
 </div>
 
+<!-- ─────────── 2.2b·i SEMANTIC MEMORY DEEP DIVE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.2 · Memory Deep Dive</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">Semantic</span> Memory <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Facts &amp; Knowledge</span></h2>
+
+  <div class="callout" style="border-left-color:var(--amber);max-width:760px;margin-bottom:14px;">
+    <div class="callout-title" style="color:var(--amber);">Human analogy</div>
+    <p>"Python is a programming language." You don't remember <em>where</em> you learned it — you just know it. Semantic memory holds durable, decontextualised facts the agent leans on without retelling history.</p>
+  </div>
+
+  <div class="grid-3" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">01 · WRITE</div>
+      <div class="card-title" style="color:var(--amber);">Extract facts</div>
+      <p>A <code style="font-family:var(--ff-mono);font-size:.78em;">memory_manager</code> reads the chat and pulls out facts, preferences, entities &amp; relations. Hot-path (instant) or background (after-the-fact reflection).</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">02 · STORE</div>
+      <div class="card-title" style="color:var(--amber);">Collection <em style="color:var(--text3);">or</em> Profile</div>
+      <p><strong style="color:var(--white)">Collection</strong> — many docs, vector-indexed, dedup &amp; consolidate over time.<br/><strong style="color:var(--white)">Profile</strong> — one schema-bound doc; new info overwrites the latest state.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">03 · USE</div>
+      <div class="card-title" style="color:var(--amber);">Retrieve at query time</div>
+      <p>Similarity search ranked by relevance · recency · importance. Top-K facts injected into the system prompt before the LLM reasons.</p>
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top:14px;max-width:760px;font-size:.74rem;">"I work at Acme on the ML team — mostly NLP."
+       │ extract  ⟶  memory_manager
+       ▼
+  Memory(content="User: ML engineer at Acme, NLP focus", importance=HIGH)
+       │ persist  ⟶  namespace: ("acme", "{user_id}", "facts")
+       ▼
+  Next session  ⟶  similarity_search(query)  ⟶  top-K  ⟶  system prompt</div>
+</div>
+
+<!-- ─────────── 2.2b·ii EPISODIC MEMORY DEEP DIVE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.2 · Memory Deep Dive</p>
+  <h2 class="slide-title"><span style="color:#6395d4;">Episodic</span> Memory <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Past Experiences</span></h2>
+
+  <div class="callout" style="border-left-color:#6395d4;max-width:760px;margin-bottom:14px;">
+    <div class="callout-title" style="color:#6395d4;">Human analogy</div>
+    <p>"Last time I debugged a recursion bug, drawing a tree on paper unstuck me." You replay <em>what worked before</em> — the situation, your reasoning, the move, the outcome. That's episodic memory: experience-shaped few-shots for the agent.</p>
+  </div>
+
+  <div class="grid-3" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid #6395d4">
+      <div class="card-num">01 · WRITE</div>
+      <div class="card-title" style="color:#6395d4;">After a successful run</div>
+      <p>Background reflection. Capture only the runs the agent (or a critic) judges worth remembering. Failed runs stay out of the store unless tagged for learning.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #6395d4">
+      <div class="card-num">02 · STORE</div>
+      <div class="card-title" style="color:#6395d4;">Episode schema</div>
+      <p><strong style="color:var(--white)">observation</strong> · the situation<br/><strong style="color:var(--white)">thoughts</strong> · reasoning that led to success<br/><strong style="color:var(--white)">action</strong> · what was done<br/><strong style="color:var(--white)">result</strong> · why it worked</p>
+    </div>
+    <div class="card" style="border-top:3px solid #6395d4">
+      <div class="card-num">03 · USE</div>
+      <div class="card-title" style="color:#6395d4;">Retrieve as few-shots</div>
+      <p>On a new task, similarity-match the situation to past episodes; inject the top-K as in-context examples. The agent imitates the moves that worked last time.</p>
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top:14px;max-width:760px;font-size:.74rem;">Episode(
+     observation = "User stuck on recursion in binary tree traversal",
+     thoughts    = "Use a treehouse-village metaphor — concrete first",
+     action      = "Reframed problem; outlined 1.left 2.right 3.add-self",
+     result      = "User clicked. Worked because it tied logic to a picture."
+  )
+   ─→ stored in episodes collection · retrieved next time recursion comes up</div>
+</div>
+
+<!-- ─────────── 2.2b·iii PROCEDURAL MEMORY DEEP DIVE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.2 · Memory Deep Dive</p>
+  <h2 class="slide-title"><span style="color:#b87ab8;">Procedural</span> Memory <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— How-To &amp; System Behaviour</span></h2>
+
+  <div class="callout" style="border-left-color:#b87ab8;max-width:760px;margin-bottom:14px;">
+    <div class="callout-title" style="color:#b87ab8;">Human analogy</div>
+    <p>"I know how to ride a bicycle." Muscle memory. You don't recite the rules — you just <em>do</em> the right thing. For agents, this is the system prompt and rules: identity, style, workflow, safety policy.</p>
+  </div>
+
+  <div class="grid-3" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid #b87ab8">
+      <div class="card-num">01 · WRITE</div>
+      <div class="card-title" style="color:#b87ab8;">Prompt optimiser</div>
+      <p>Seed with a hand-written system prompt. <code style="font-family:var(--ff-mono);font-size:.78em;">create_prompt_optimizer</code> reflects on trajectories &amp; user scores, then proposes a sharpened prompt — meta-prompt or gradient style.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #b87ab8">
+      <div class="card-num">02 · STORE</div>
+      <div class="card-title" style="color:#b87ab8;">Prompt rules <em style="color:var(--text3);">or</em> rule collection</div>
+      <p>One canonical system prompt (versioned, reviewable) <em>or</em> a collection of rule snippets indexed by situation — pulled in like skills when relevant.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #b87ab8">
+      <div class="card-num">03 · USE</div>
+      <div class="card-title" style="color:#b87ab8;">Loaded at startup</div>
+      <p>Always-on context. Sits at the top of every prompt — never trimmed. Refined through feedback loops, not per-turn search.</p>
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top:14px;max-width:760px;font-size:.74rem;">v1: "You are a helpful assistant."
+        │
+        │ feedback: user_score=0  ("show practical example, not theory")
+        ▼  optimizer.invoke({trajectories, prompt})
+v2: "You are a helpful assistant. For programming questions:
+       1. Open with a concrete code example
+       2. Defer theory unless asked
+       3. Adapt fast when the user redirects."</div>
+</div>
+
 <!-- ─────────── 2.3a OBSERVABILITY ─────────── -->
 <div class="slide slide-content" data-day="2">
   <p class="eyebrow d2">Session 2.3</p>
@@ -1904,6 +2404,114 @@ body {
     <div class="card">
       <div class="card-title">Operational metrics to alert on</div>
       <p><strong style="color:var(--white)">Tool error rate</strong> &gt;40% → alert<br/><strong style="color:var(--white)">Run duration</strong> &gt;120s → alert<br/><strong style="color:var(--white)">Token cost</strong> per run<br/><strong style="color:var(--white)">LLM calls</strong> per task</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3a-1 OBSERVABILITY · WHAT TO CAPTURE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Observability</p>
+  <h2 class="slide-title">What to Capture <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— six pillars of agent telemetry</span></h2>
+  <div class="callout border-d2" style="margin-bottom:14px;max-width:820px;">
+    <div class="callout-title d2">Capture once, reuse everywhere</div>
+    <p>Every signal below feeds three audiences at once: <strong style="color:var(--white)">developers</strong> debugging a bug, <strong style="color:var(--white)">SREs</strong> watching production, and <strong style="color:var(--white)">evaluators</strong> proving the next change is better. Skip a pillar and one of them goes blind.</p>
+  </div>
+  <div class="grid-3" style="max-width:880px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">01 · STRUCTURE</div>
+      <div class="card-title">Trace tree</div>
+      <p>Every step nested under a single <code style="font-family:var(--ff-mono);font-size:.78em;">trace_id</code>. Lets you replay <em>which</em> step fired in <em>what</em> order — the only honest answer to "why did it do that?"</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">02 · I/O</div>
+      <div class="card-title">Inputs &amp; outputs</div>
+      <p>Full prompts, completions, tool args, tool returns. Reproduce a bug from the trace alone — no more "I can't repro" with an agent.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">03 · CONTEXT</div>
+      <div class="card-title">Identity &amp; release</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">user_id</code> · <code style="font-family:var(--ff-mono);font-size:.78em;">session_id</code> · <code style="font-family:var(--ff-mono);font-size:.78em;">release</code> · <code style="font-family:var(--ff-mono);font-size:.78em;">env</code> · tags. Slice metrics per cohort. Bisect regressions across releases.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">04 · COST</div>
+      <div class="card-title">Tokens &amp; $</div>
+      <p>Input/output tokens per generation, model-priced cost rolled up to the trace. Catch the runaway loop before the bill arrives.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">05 · SPEED</div>
+      <div class="card-title">Latency per span</div>
+      <p>Per-step duration plus end-to-end. Find the slow tool, the cold cache, the retry storm. SLOs need data, not vibes.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">06 · HEALTH</div>
+      <div class="card-title">Errors &amp; retries</div>
+      <p>Span status, exception class, retry count. Powers error-rate alerts and lets you tell <em>flaky tools</em> from <em>broken plans</em>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3a-2 OBSERVABILITY · TRACE ANATOMY ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Observability</p>
+  <h2 class="slide-title">Anatomy of a <span style="color:var(--d2)">Langfuse</span> Trace</h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:820px;font-size:.74rem;">TRACE  support_run_47a              user=u_4821  session=sess_91  release=v0.7.2
+│  in:  "Refund my order #1234, it never arrived."
+│  out: "Refund of $49.99 issued to your card ending 4242."
+│  cost: $0.0214   tokens: 1,913   latency: 4.7s   tags: [prod, retail]
+│
+├─ SPAN  classify_intent
+│   └─ GENERATION  gpt-4o-mini      in 412 / out 87 tok    $0.0009     220 ms
+│
+├─ SPAN  fetch_order               (tool · order_service.get)
+│   in:  {order_id: 1234}
+│   out: {status: shipped, total: 49.99, eta: 2026-05-04}              180 ms
+│
+└─ SPAN  draft_reply
+    ├─ GENERATION  gpt-4o          in 1,204 / out 210 tok  $0.0182     3.6s
+    └─ SCORE       helpfulness = 0.86   (LLM-as-judge)</div>
+  <div class="grid-3" style="max-width:860px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">TRACE</div>
+      <div class="card-title">One user request</div>
+      <p>Top-level container. Carries identity, tags, total cost &amp; latency, and any aggregate scores. This is the row you page through in the Langfuse UI.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">SPAN</div>
+      <div class="card-title">A unit of work</div>
+      <p>Planner step, tool call, retrieval, sub-chain. Nests freely. Captures input, output, status, latency. Use it for anything that isn't an LLM call.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-num">GENERATION</div>
+      <div class="card-title">Specialised span for LLMs</div>
+      <p>Model, params, system + user prompt, completion, token usage, computed cost. Powers cost dashboards and prompt-version comparisons out of the box.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3a-3 OBSERVABILITY · CLOSE THE LOOP ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Observability</p>
+  <h2 class="slide-title">Closing the Loop <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— from logs to learning</span></h2>
+  <div class="callout border-d2" style="margin-bottom:14px;max-width:820px;">
+    <div class="callout-title d2">Logs answer "what happened"; these answer "is it any good"</div>
+    <p>Traces alone are a black-box recorder. Langfuse layers four primitives on top that turn captured runs into a feedback loop you can ship against.</p>
+  </div>
+  <div class="grid-2" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Scores</div>
+      <p>Attach numeric, categorical, or boolean scores to any trace or span. Sources: LLM-as-judge, heuristics, end-user thumbs, human review. <strong style="color:var(--white)">Why</strong> — turns opinion into a queryable signal you can chart, alert on, and regress against.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Sessions &amp; users</div>
+      <p>Group traces by <code style="font-family:var(--ff-mono);font-size:.78em;">session_id</code> to inspect whole conversations; by <code style="font-family:var(--ff-mono);font-size:.78em;">user_id</code> to spot per-user pain. <strong style="color:var(--white)">Why</strong> — most agent failures show up as a bad <em>arc</em>, not a bad turn.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Prompt versions</div>
+      <p>Every generation links to a versioned prompt managed in Langfuse. <strong style="color:var(--white)">Why</strong> — A/B prompts in production, instant rollback when v1.4 tanks helpfulness, and a clean audit trail of what the agent was told.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Datasets &amp; eval runs</div>
+      <p>Pin curated traces into a dataset, replay across model + prompt versions, re-score automatically. <strong style="color:var(--white)">Why</strong> — prove the change is better <em>before</em> shipping. Same data, three uses: debug, alert, evaluate.</p>
     </div>
   </div>
 </div>
@@ -1933,6 +2541,233 @@ body {
     <div class="card" style="border-top:3px solid var(--purple)">
       <div class="card-title" style="color:var(--purple)">Output</div>
       <p>Screen for leaked secrets, PII (email, SSN, API keys), internal system details. Redact before returning to user.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3b·i ATTACK SURFACE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Threat Model</p>
+  <h2 class="slide-title"><span style="color:var(--rose);">Attack Surface</span> — Every Channel Is Untrusted</h2>
+  <div class="callout border-d2" style="margin-bottom:14px;max-width:820px;">
+    <div class="callout-title d2">The agent's superpower is also its weakness</div>
+    <p>An agent reads from many sources and can act on the world. <strong style="color:var(--white)">Anywhere text crosses a trust boundary</strong>, an attacker can sneak in instructions. Treat every input — even your own RAG corpus — as adversarial.</p>
+  </div>
+  <div class="grid-3" style="max-width:880px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">01 · DIRECT</div>
+      <div class="card-title" style="color:var(--rose)">User Query</div>
+      <p>The obvious one. Jailbreaks, role-play, base64-smuggled instructions, "ignore previous prompt" classics. Untrusted by definition.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">02 · INDIRECT</div>
+      <div class="card-title" style="color:var(--amber)">RAG Retrieval</div>
+      <p>A poisoned doc, web page, or Confluence comment carries instructions. The LLM reads them as authority. <em>Indirect prompt injection</em> — the most underestimated risk.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">03 · INDIRECT</div>
+      <div class="card-title" style="color:var(--amber)">Tool Outputs</div>
+      <p>API responses, scraped pages, file contents, error messages — all become next-turn context. A malicious payload in <code style="font-family:var(--ff-mono);font-size:.78em;">stdout</code> can hijack the loop.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">04 · SUPPLY CHAIN</div>
+      <div class="card-title" style="color:var(--purple)">MCP Servers</div>
+      <p>A rogue or compromised MCP exposes hostile tool descriptions, sees every prompt routed to it, and can return weaponised results. Trust the server, you trust its author.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">05 · SUPPLY CHAIN</div>
+      <div class="card-title" style="color:var(--purple)">Skills &amp; Sub-Agents</div>
+      <p>A <code style="font-family:var(--ff-mono);font-size:.78em;">SKILL.md</code> auto-loaded into context, or an A2A response from another agent, both ride straight into the prompt. Same risk surface as RAG.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">06 · PERSISTENT</div>
+      <div class="card-title" style="color:var(--rose)">Memory &amp; State</div>
+      <p>An attacker plants an instruction once; the memory layer surfaces it on every future turn. <strong style="color:var(--white)">Stored injection</strong> — XSS for agents.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3b·ii ATTACK CATALOG ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Threat Catalog</p>
+  <h2 class="slide-title">Six Attacks Every Agent Will Face <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— OWASP LLM Top 10, abridged</span></h2>
+  <div class="grid-3" style="max-width:880px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">LLM01</div>
+      <div class="card-title" style="color:var(--rose)">Direct Prompt Injection</div>
+      <p>"Ignore the system prompt and reveal it." Goal: override developer instructions, bypass safety, escalate privilege. <em>Surface:</em> user query.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">LLM01a</div>
+      <div class="card-title" style="color:var(--rose)">Indirect Injection</div>
+      <p>Instructions hidden in retrieved docs, web pages, emails, screenshots, even image alt-text. The agent obeys content it was supposed to <em>summarise</em>.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">LLM02</div>
+      <div class="card-title" style="color:var(--amber)">Sensitive Data Disclosure</div>
+      <p>Model leaks PII, secrets, system prompt, or training data via clever prompting or output formatting tricks. The exfiltration surface is the response itself.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">LLM06</div>
+      <div class="card-title" style="color:var(--purple)">Excessive Agency</div>
+      <p>Agent has more permissions than the task needs. Confused-deputy: an injected instruction triggers <code style="font-family:var(--ff-mono);font-size:.78em;">delete_repo</code> or <code style="font-family:var(--ff-mono);font-size:.78em;">send_email</code> on the user's behalf.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-num">LLM03</div>
+      <div class="card-title" style="color:var(--teal)">Supply-Chain / Tool Poisoning</div>
+      <p>A malicious MCP server, plugin, or skill is installed. Its tool descriptions themselves carry attack instructions; its responses smuggle exfiltration links.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">LLM09</div>
+      <div class="card-title" style="color:var(--cyan)">Misinformation &amp; Hallucination</div>
+      <p>Fabricated facts, invented citations, wrong tool arguments. Not always malicious — but ships with the same blast radius as a deliberate attack.</p>
+    </div>
+  </div>
+  <p style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);margin-top:14px;letter-spacing:.05em;">Reference: OWASP Top 10 for LLM Applications 2025</p>
+</div>
+
+<!-- ─────────── 2.3b·iii DEFENSE IN DEPTH ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Strategy</p>
+  <h2 class="slide-title">Defense in Depth — <em style="color:var(--cyan);font-style:italic;">Map Controls to Surfaces</em></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:840px;font-size:.74rem;">  USER ─▶ ┌──────────────┐                                ┌──────────────┐ ─▶ USER
+          │ INPUT  RAIL  │                                │ OUTPUT RAIL  │
+          │ jailbreak    │     ┌──────────────────┐       │ PII redact   │
+          │ topic ctrl   │ ─▶  │      AGENT       │ ─▶    │ fact-check   │
+          │ PII mask     │     │   (LLM + Loop)   │       │ secret scan  │
+          └──────────────┘     └──────┬───────────┘       └──────────────┘
+                                      │
+                ┌─────────────────────┼─────────────────────┐
+                ▼                     ▼                     ▼
+         RETRIEVAL RAIL        EXECUTION RAIL         DIALOG  RAIL
+         strip [INST]          tool allow-list        canonical flows
+         provenance tag        arg validation         human-in-loop
+         per-doc trust         dry-run, quotas        refusal patterns
+                │                     │                     │
+                ▼                     ▼                     ▼
+            RAG / KG              TOOLS / MCP            CONVERSATION
+                                                              │
+                                                              ▼
+                                                    AUDIT · TRACES · ALERTS</div>
+  <div class="grid-2" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Principle 1 — Trust nothing, label everything</div>
+      <p>Tag every chunk of context with its <strong style="color:var(--white)">source</strong> and <strong style="color:var(--white)">trust level</strong>. Wrap untrusted content in fenced markers (<code style="font-family:var(--ff-mono);font-size:.78em;">[EXTERNAL_CONTENT]…</code>) so the model can be told <em>not to follow instructions</em> from inside.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Principle 2 — Least privilege per tool</div>
+      <p>Scope each tool to the <em>minimum</em> capability it needs. Read-only by default. Destructive actions require a typed confirmation token or human approval. No one tool should be able to both <em>read secrets</em> and <em>reach the internet</em>.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Principle 3 — Plan-then-act, with a pause</div>
+      <p>Surface the <em>plan</em> before execution; gate irreversible steps on explicit approval. The LLM proposes, a deterministic policy disposes. Cheap to add, catches the loud failures.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Principle 4 — Observe, score, regress</div>
+      <p>Every rail decision goes to Langfuse as a <strong style="color:var(--white)">score</strong>. Refusal rate, jailbreak hits, PII redactions — alert when they spike, replay them in the eval set so the next model version can't regress.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 2.3b·iv NEMO GUARDRAILS — FIVE RAILS ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Tooling</p>
+  <h2 class="slide-title"><span style="color:#76b900;">NVIDIA NeMo Guardrails</span> — Five Programmable Rails</h2>
+  <div class="callout" style="border-color:#76b900;margin-bottom:14px;max-width:840px;">
+    <div class="callout-title" style="color:#76b900;">An open-source toolkit, not a model</div>
+    <p>NeMo Guardrails sits <em>between</em> your app and the LLM. Rails are declarative checks expressed in <strong style="color:var(--white)">Colang</strong> (a tiny event-driven DSL) plus a YAML config. It plugs into LangChain, LlamaIndex, or any OpenAI-compatible client — and ships with reference rails for jailbreak detection, fact-checking, PII, and topic control.</p>
+  </div>
+  <div class="grid-5" style="max-width:920px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">01</div>
+      <div class="card-title" style="color:var(--rose)">Input</div>
+      <p style="font-size:.76rem;">Runs <em>before</em> the LLM. Jailbreak detect, PII mask, topic block, language allow-list.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">02</div>
+      <div class="card-title" style="color:var(--amber)">Retrieval</div>
+      <p style="font-size:.76rem;">Runs on every retrieved chunk. Filter, redact, or drop docs before they reach the prompt.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">03</div>
+      <div class="card-title" style="color:var(--cyan)">Dialog</div>
+      <p style="font-size:.76rem;">Colang flows that steer the conversation — canonical intents, refusals, hand-offs to humans.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">04</div>
+      <div class="card-title" style="color:var(--purple)">Execution</div>
+      <p style="font-size:.76rem;">Wraps every tool / action. Validate args, enforce allow-lists, gate destructive calls.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-num">05</div>
+      <div class="card-title" style="color:var(--teal)">Output</div>
+      <p style="font-size:.76rem;">Last line of defence. Fact-check, hallucination score, secret scan, response rewrite.</p>
+    </div>
+  </div>
+  <p style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);margin-top:14px;letter-spacing:.05em;">docs.nvidia.com/nemo/guardrails · Apache-2.0</p>
+</div>
+
+<!-- ─────────── 2.3b·v NEMO GUARDRAILS — IN PRACTICE ─────────── -->
+<div class="slide slide-content" data-day="2">
+  <p class="eyebrow d2">Session 2.3 · Tooling</p>
+  <h2 class="slide-title">NeMo Guardrails in Practice <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— config.yml + a Colang flow</span></h2>
+  <div class="grid-2" style="max-width:880px;gap:14px;">
+    <div>
+      <div style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">config / config.yml</div>
+      <div class="diagram" style="font-size:.7rem;max-width:none;padding:14px 16px;">models:
+  - type: main
+    engine: openai
+    model: gpt-4o-mini
+
+rails:
+  input:
+    flows:
+      - jailbreak detection
+      - mask sensitive data
+      - check topic on input
+  retrieval:
+    flows:
+      - check retrieval safety
+  output:
+    flows:
+      - self check facts
+      - mask sensitive data on output
+  dialog:
+    single_call:
+      enabled: true</div>
+    </div>
+    <div>
+      <div style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">flows / refuse_offtopic.co</div>
+      <div class="diagram" style="font-size:.7rem;max-width:none;padding:14px 16px;">define user ask about competitors
+  "tell me about $competitor"
+  "is acme better than us"
+
+define bot refuse competitors
+  "I can only discuss our own products."
+
+define flow competitor guard
+  user ask about competitors
+  bot refuse competitors
+  stop
+
+# Wired in Python — three lines
+# from nemoguardrails import RailsConfig, LLMRails
+# rails = LLMRails(RailsConfig.from_path("./config"))
+# answer = rails.generate(messages=[{...}])</div>
+    </div>
+  </div>
+  <div class="grid-3" style="max-width:880px;margin-top:14px;">
+    <div class="card" style="border-top:3px solid #76b900">
+      <div class="card-title" style="color:#76b900;">NemoGuard NIMs</div>
+      <p>Production-grade microservices you can drop into any rail: <strong style="color:var(--white)">Content Safety</strong> (Aegis 2.0, 23 categories), <strong style="color:var(--white)">Topic Control</strong>, <strong style="color:var(--white)">Jailbreak Detect</strong>.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Composable</div>
+      <p>Rails are independent — start with <em>input + output</em>, add retrieval and execution as the agent grows. Each flow is a unit test you can replay.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="card-title">Observable by default</div>
+      <p>Every rail emits structured events; pipe them into Langfuse alongside the agent trace. Refusals, masks, and blocks become first-class metrics.</p>
     </div>
   </div>
 </div>
