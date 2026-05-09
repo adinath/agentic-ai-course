@@ -3702,6 +3702,215 @@ GET /tasks/{id}/stream  →       SSE: working → completed + result</div>
   </div>
 </div>
 
+<!-- ─────────── 3.2b·i RAGAS — METRIC FAMILIES ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas Toolkit</p>
+  <h2 class="slide-title"><em style="color:var(--cyan);font-style:italic;">Ragas</em> — Four Metric Families for Agents</h2>
+  <div class="callout border-d3" style="margin-bottom:14px;max-width:840px;background:rgba(139,92,246,.05);">
+    <div class="callout-title d3">Open-source · LLM-as-judge · Apache-2.0</div>
+    <p>Ragas ships <strong style="color:var(--white)">programmatic</strong> and <strong style="color:var(--white)">LLM-graded</strong> metrics that score a multi-turn conversation against expectations. All four consume the same <code style="font-family:var(--ff-mono);font-size:.78em;">user_input</code> message log — plug into pytest, CI, or pipe scores into Langfuse.</p>
+  </div>
+  <div class="grid-2" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">01 · PROGRAMMATIC</div>
+      <div class="card-title">Tool Call Accuracy</div>
+      <p>Did the agent call <strong style="color:var(--white)">the right tools</strong> with <strong style="color:var(--white)">the right args</strong> in <strong style="color:var(--white)">the right order</strong>? Deterministic, no judge LLM needed.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">02 · PROGRAMMATIC</div>
+      <div class="card-title">Tool Call F1</div>
+      <p>Soft cousin of accuracy. Returns <strong style="color:var(--white)">precision · recall · F1</strong> over the unordered set of tool calls. Survives extra or missing calls.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">03 · LLM-GRADED</div>
+      <div class="card-title">Agent Goal Accuracy</div>
+      <p>Did the agent <strong style="color:var(--white)">achieve the user's goal</strong>? Binary 1 / 0. Cares about outcome, not path. With- or without-reference modes.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">04 · LLM-GRADED</div>
+      <div class="card-title">Topic Adherence</div>
+      <p>Did every reply <strong style="color:var(--white)">stay on the allowed domain</strong>? Returns precision · recall · F1 against a list of <code style="font-family:var(--ff-mono);font-size:.78em;">reference_topics</code>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b·ii RAGAS — TOOL CALL ACCURACY ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Tool Call Accuracy — <em style="color:var(--cyan);font-style:italic;">Strict vs Flexible Order</em></h2>
+  <div class="grid-2" style="max-width:820px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Strict order (default)</div>
+      <p>Sequence <strong style="color:var(--white)">must match exactly</strong>. Use for sequential workflows where order is causal — <em>search</em> before <em>filter</em>, <em>fetch</em> before <em>transform</em>.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Flexible order</div>
+      <p>Tools can fire <strong style="color:var(--white)">in any order</strong>. Use for parallel fan-out — fetching weather for many cities, hitting independent APIs in a map step.</p>
+    </div>
+  </div>
+  <div class="diagram" style="font-size:.7rem;max-width:840px;padding:14px 18px;">FORMULA   score = arg_accuracy × (sequence_aligned ? 1 : 0)
+
+EXAMPLES
+  PERFECT     Expected [search("py", limit=10, sort="date")]
+              Got      [search("py", limit=10, sort="date")]              → 1.00
+
+  PARTIAL     Expected [search("py", limit=10, sort="date")]
+              Got      [search("py", limit=10, sort="relevance")]         → 0.66    2/3 args match
+
+  WRONG       Expected [search(...), filter(...)]
+  ORDER       Got      [filter(...), search(...)]                         → 0.00    sequence broken (strict)
+              Same set evaluated in flexible mode                         → 1.00</div>
+  <div class="callout border-d3" style="margin-top:14px;max-width:840px;">
+    <div class="callout-title d3">Pitfall</div>
+    <p>Tool Call Accuracy is <strong style="color:var(--white)">unforgiving</strong> — one swapped step zeros the score. Pair it with Tool Call F1 during prompt iteration so a 0.0 still tells you <em>how close</em> you were.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b·iii RAGAS — TOOL CALL F1 ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Tool Call F1 — <em style="color:var(--cyan);font-style:italic;">Precision · Recall · Survives Drift</em></h2>
+  <div class="diagram" style="font-size:.74rem;max-width:780px;padding:16px 20px;margin-bottom:14px;">UNORDERED MATCHING — name + args must match; sequence ignored
+
+  TP   tool calls that match name AND args
+  FP   tool calls the agent made that were not expected
+  FN   expected tool calls the agent did not make
+
+  Precision = TP / (TP + FP)        Recall = TP / (TP + FN)
+
+           2 · Precision · Recall
+  F1  =  ─────────────────────────
+            Precision + Recall</div>
+  <div class="grid-3" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="tag" style="background:rgba(16,185,129,.15);color:var(--green)">Perfect</div>
+      <div class="card-title">F1 = 1.00</div>
+      <p>Ref&nbsp; [weather, uv]<br/>Got&nbsp; [weather, uv]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">TP=2 · FP=0 · FN=0</span></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">Extra call</div>
+      <div class="card-title">F1 = 0.67</div>
+      <p>Ref&nbsp; [weather, uv]<br/>Got&nbsp; [weather, uv, air_quality]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">TP=2 · FP=1 · FN=0</span></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="tag" style="background:rgba(244,63,94,.15);color:var(--rose)">Wrong arg</div>
+      <div class="card-title">F1 = 0.00</div>
+      <p>Ref&nbsp; [weather(Paris)]<br/>Got&nbsp; [weather(London)]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">name OK, args break match</span></p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="margin-top:14px;max-width:780px;">
+    <div class="callout-title d3">When F1 beats Accuracy</div>
+    <p>During <strong style="color:var(--white)">prompt onboarding</strong> and <strong style="color:var(--white)">regression triage</strong>. F1 quantifies <em>how close</em> the agent got — Accuracy only tells you it failed. Track F1 trend across PRs, gate merges on Accuracy.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b·iv RAGAS — AGENT GOAL ACCURACY ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Agent Goal Accuracy — <em style="color:var(--cyan);font-style:italic;">Outcome over Path</em></h2>
+  <p style="color:var(--text2);max-width:780px;font-size:.95rem;margin-bottom:14px;text-align:center;">Binary <strong style="color:var(--white)">1 / 0</strong>. Asks one question — <strong style="color:var(--white)">did the user get what they came for?</strong> The agent can use any tool, in any order; only the end state is judged.</p>
+  <div class="grid-2" style="max-width:820px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MODE 1</div>
+      <div class="card-title">With Reference</div>
+      <p>You provide a <code style="font-family:var(--ff-mono);font-size:.78em;">reference</code> string describing the ideal outcome. Judge LLM compares it against the conversation's end state.</p>
+      <p style="margin-top:8px;color:var(--text3);font-size:.76rem;font-style:italic;">e.g. "Table booked at one of the Chinese restaurants at 8pm"</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">MODE 2</div>
+      <div class="card-title">Without Reference</div>
+      <p>Judge LLM <strong style="color:var(--white)">infers the goal</strong> from the first user turn, then checks whether the conversation ended having achieved it.</p>
+      <p style="margin-top:8px;color:var(--text3);font-size:.76rem;font-style:italic;">No labels needed — ideal for production traces.</p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="max-width:820px;">
+    <div class="callout-title d3">Tool Call Accuracy vs Goal Accuracy</div>
+    <p><em>"Book me a flight to Paris."</em> — if you only care that the booking succeeded, use <strong style="color:var(--white)">Goal Accuracy</strong>. If you also care that the agent searched flights <em>before</em> booking (not the other way round), add <strong style="color:var(--white)">Tool Call Accuracy</strong>. They are complementary, not redundant.</p>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b·v RAGAS — TOPIC ADHERENCE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Topic Adherence — <em style="color:var(--cyan);font-style:italic;">Stay In Your Lane</em></h2>
+  <p style="color:var(--text2);max-width:840px;font-size:.92rem;margin-bottom:14px;text-align:center;">Verifies the agent only answers queries within an allow-listed set of <code style="font-family:var(--ff-mono);font-size:.86em;">reference_topics</code>. Pairs naturally with input-rail guardrails as the regression-test for <em>scope creep</em>.</p>
+  <div class="diagram" style="font-size:.72rem;max-width:840px;padding:14px 18px;margin-bottom:14px;">CONVERSATION                              reference_topics = ["science"]
+
+  user  → "Tell me about general relativity."
+  agent → uses document_search → answers                                  ✓ on-topic
+  user  → "Got any chocolate cake recipes?"
+  agent → uses recipe_search   → answers                                  ✗ off-topic
+
+  Precision = on-topic answered / (on-topic + off-topic answered)         = 1 / 2  = 0.50
+  Recall    = on-topic answered / (on-topic + on-topic refused)           = 1 / 1  = 1.00
+  F1        = 0.67</div>
+  <div class="grid-2" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title" style="color:var(--amber)">Precision mode</div>
+      <p>Penalises the agent for <strong style="color:var(--white)">answering off-topic</strong>. Use when the bigger risk is the agent sliding into unsupported domains.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Recall mode</div>
+      <p>Penalises the agent for <strong style="color:var(--white)">refusing valid on-topic queries</strong>. Use when over-cautious refusals are the bigger risk.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── 3.2b·vi RAGAS — EVAL SUITE RECIPE ─────────── -->
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · In Practice</p>
+  <h2 class="slide-title">Designing Your <em style="color:var(--cyan);font-style:italic;">Eval Suite</em></h2>
+  <div class="grid-2" style="max-width:920px;gap:18px;align-items:start;">
+    <div>
+      <div style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">tests / test_agent.py</div>
+      <div class="diagram" style="font-size:.66rem;max-width:none;padding:14px 16px;line-height:1.55;">from ragas.metrics.collections import (
+    ToolCallAccuracy, ToolCallF1,
+    AgentGoalAccuracyWithReference,
+    TopicAdherence,
+)
+from ragas.llms.base import llm_factory
+
+judge = llm_factory("gpt-4o-mini", client=client)
+
+async def test_book_flight_happy_path():
+    trace = await agent.run(scenario.input)
+
+    f1 = await ToolCallF1().ascore(
+        user_input=trace,
+        reference_tool_calls=scenario.tools)
+    assert f1.value &gt;= 0.80, "tool drift"
+
+    goal = await AgentGoalAccuracyWithReference(
+        llm=judge).ascore(
+        user_input=trace,
+        reference=scenario.outcome)
+    assert goal.value == 1.0, "goal not met"
+
+    topic = await TopicAdherence(
+        llm=judge, mode="precision").ascore(
+        user_input=trace,
+        reference_topics=["travel"])
+    assert topic.value &gt;= 0.95, "scope creep"</div>
+    </div>
+    <div>
+      <table class="ref-table" style="max-width:none;">
+        <thead><tr><th>Stage</th><th>Metric</th><th>Gate</th></tr></thead>
+        <tbody>
+          <tr><td>Local dev</td><td>ToolCall F1</td><td>≥ 0.70</td></tr>
+          <tr><td>PR check</td><td>ToolCall Accuracy</td><td>≥ 0.85</td></tr>
+          <tr><td>PR check</td><td>Goal Accuracy</td><td>= 1.0</td></tr>
+          <tr><td>Pre-prod</td><td>Topic Adherence</td><td>≥ 0.95</td></tr>
+          <tr><td>Production</td><td>Goal Accuracy (no-ref)</td><td>≥ 0.90 / day</td></tr>
+        </tbody>
+      </table>
+      <div class="callout border-d3" style="margin-top:14px;background:rgba(139,92,246,.05);">
+        <div class="callout-title d3">The eval-driven loop</div>
+        <p><strong style="color:var(--white)">1.</strong> Reproduce a prod bug as a test case · <strong style="color:var(--white)">2.</strong> Pick the metric that catches it · <strong style="color:var(--white)">3.</strong> Add to CI · <strong style="color:var(--white)">4.</strong> Watch the trend in Langfuse.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────── 3.3 CAPSTONE ─────────── -->
 <div class="slide slide-content" data-day="3">
   <p class="eyebrow d3">Session 3.3</p>
