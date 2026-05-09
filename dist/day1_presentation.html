@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Day 1 - LLM Based Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #0a0e1a;
+  --bg2:     #0f1524;
+  --surface: #1a2340;
+  --border:  #2a3a5c;
+  --blue:    #3b82f6;
+  --cyan:    #22d3ee;
+  --teal:    #14b8a6;
+  --green:   #10b981;
+  --amber:   #f59e0b;
+  --rose:    #f43f5e;
+  --purple:  #8b5cf6;
+  --text:    #e2e8f0;
+  --text2:   #94a3b8;
+  --text3:   #64748b;
+  --white:   #ffffff;
+  --d1:      #3b82f6;
+  --d2:      #14b8a6;
+  --d3:      #8b5cf6;
+  --ff-disp: 'DM Serif Display', Georgia, serif;
+  --ff-body: 'Outfit', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+}
+
+/* ── DECK ── */
+#deck {
+  width: 100%; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 48px 72px;
+  opacity: 0; pointer-events: none;
+  transform: translateX(40px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.slide.active {
+  opacity: 1; pointer-events: all;
+  transform: translateX(0);
+}
+.slide.exit {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-40px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+/* ── SLIDE TYPES ── */
+
+/* Cover */
+.slide-cover {
+  background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(59,130,246,.12) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 80% at 20% 80%, rgba(34,211,238,.07) 0%, transparent 70%),
+              var(--bg);
+  text-align: center;
+}
+
+/* Day break */
+.slide-day {
+  text-align: center;
+}
+
+/* Standard */
+.slide-content {
+  align-items: center;
+}
+
+/* ── CHROME ── */
+#chrome {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 100;
+}
+
+#progress-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+
+#slide-counter {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+#day-indicator {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--surface);
+  transition: color .3s, background .3s;
+}
+
+.nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 14px;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.nav-btn:hover { background: var(--border); color: var(--white); }
+
+/* ── TYPOGRAPHY ── */
+.eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: .7;
+}
+
+.slide-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 28px;
+}
+.slide-title em { font-style: italic; }
+
+.cover-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.cover-title em { color: var(--cyan); font-style: italic; }
+
+.day-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+
+.cover-sub {
+  font-size: 1.1rem;
+  color: var(--text2);
+  margin-bottom: 36px;
+  max-width: 540px;
+}
+
+/* ── PILLS ROW ── */
+.pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 20px;
+}
+.pill {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+/* ── BULLET LIST ── */
+.bullets {
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+}
+.bullets li {
+  display: flex; align-items: flex-start;
+  gap: 12px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.bullet-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.bullets li strong { color: var(--white); }
+.bullets li span { color: var(--text2); }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 780px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: 100%; max-width: 820px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; width: 100%; max-width: 860px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.card-num {
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  margin-bottom: 6px;
+}
+.card-title {
+  font-size: .88rem; font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--white);
+}
+.card p {
+  font-size: .8rem; color: var(--text2);
+  line-height: 1.55;
+}
+.card .tag {
+  font-family: var(--ff-mono);
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  display: inline-block; padding: 2px 7px;
+  border-radius: 3px; margin-bottom: 8px;
+}
+
+/* ── COMPARE ── */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 760px; }
+.compare-col { border-radius: 10px; overflow: hidden; }
+.compare-head { padding: 10px 14px; font-size: .78rem; font-weight: 600; }
+.compare-body { padding: 14px; font-size: .85rem; color: var(--text2); line-height: 1.6; }
+.compare-body code {
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  display: block;
+  background: rgba(255,255,255,.05);
+  padding: 8px 10px; border-radius: 6px;
+  margin-bottom: 8px; color: var(--text);
+}
+
+/* ── DIAGRAM BOX ── */
+.diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  line-height: 1.6;
+  color: var(--text2);
+  width: 100%; max-width: 700px;
+  white-space: pre;
+}
+
+/* ── TABLE ── */
+.ref-table { width: 100%; max-width: 740px; border-collapse: collapse; }
+.ref-table th {
+  text-align: left; padding: 8px 14px;
+  font-family: var(--ff-mono); font-size: .72rem;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.ref-table td {
+  padding: 9px 14px;
+  font-size: .85rem; color: var(--text2);
+  border-bottom: 1px solid rgba(42,58,92,.5);
+  line-height: 1.5;
+}
+.ref-table td:first-child { color: var(--white); font-weight: 500; }
+.ref-table tr:last-child td { border-bottom: none; }
+
+/* ── CALLOUT ── */
+.callout {
+  border-radius: 10px;
+  padding: 14px 18px;
+  border-left: 3px solid;
+  background: var(--surface);
+  width: 100%; max-width: 700px;
+  margin-top: 4px;
+}
+.callout-title {
+  font-family: var(--ff-mono);
+  font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 6px;
+}
+.callout p { font-size: .88rem; color: var(--text2); line-height: 1.6; }
+
+/* ── LOOP FLOW ── */
+.loop-flow {
+  display: flex; align-items: center;
+  flex-wrap: wrap; gap: 6px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%; max-width: 700px;
+}
+.loop-node {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .8rem; font-weight: 600;
+  white-space: nowrap;
+}
+.loop-arrow { color: var(--text3); font-size: .9rem; }
+.loop-note {
+  width: 100%; margin-top: 10px;
+  font-size: .78rem; color: var(--text3);
+  font-style: italic;
+}
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: flex; gap: 24px;
+  margin-top: 8px;
+}
+.stat { text-align: center; }
+.stat-val {
+  font-family: var(--ff-disp);
+  font-size: 2.2rem;
+  color: var(--cyan);
+  line-height: 1;
+}
+.stat-lbl {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-top: 4px;
+}
+
+/* ── TOPOLOGY GRID ── */
+.topo-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; width: 100%; max-width: 820px;
+}
+.topo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.topo-name {
+  font-weight: 600; font-size: .85rem;
+  color: var(--white); margin-bottom: 4px;
+}
+.topo-use {
+  font-size: .76rem; color: var(--text2);
+  line-height: 1.5;
+}
+.topo-pattern {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  margin-top: 6px; white-space: pre-line;
+}
+
+/* ── D1 / D2 / D3 accents ── */
+.d1 { color: var(--d1); }
+.d2 { color: var(--d2); }
+.d3 { color: var(--d3); }
+.bg-d1 { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); }
+.bg-d2 { background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.3); }
+.bg-d3 { background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.3); }
+.border-d1 { border-color: var(--d1); }
+.border-d2 { border-color: var(--d2); }
+.border-d3 { border-color: var(--d3); }
+
+/* ── AGENT ARCHITECTURE DIAGRAM ── */
+.agent-arch {
+  width: 100%; max-width: 780px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+.agent-arch svg { width: 100%; height: auto; display: block; }
+.agent-arch + .grid-2 { margin-top: 14px; }
+
+/* ── KEYBOARD HINT ── */
+#key-hint {
+  position: fixed; bottom: 64px; right: 24px;
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 6px;
+  opacity: 1;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+#key-hint.hidden { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<div class="slide slide-day" data-day="1">
+  <p class="eyebrow d1">Day One</p>
+  <h2 class="day-title">LLM Based Agents</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:480px;">From stateless completions to autonomous reasoning loops — agent fundamentals, frameworks, tools, ReAct, planning, and RAG.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">What is an Agent?</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">LangGraph</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">Ollama</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">ReAct</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">Plan & Execute</span>
+    <span class="pill" style="color:var(--d1);border-color:rgba(59,130,246,.4)">RAG + Ragas</span>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1</p>
+  <h2 class="slide-title">LLM vs Agent</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.25);">
+      <div class="compare-head" style="background:rgba(244,63,94,.12);color:var(--rose)">LLM (completion)</div>
+      <div class="compare-body">
+        <code>Input → Model → Output</code>
+        Stateless. One shot. Forgets everything. You send a prompt, it generates text.
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--d1)">Agent</div>
+      <div class="compare-body">
+        <code>Perceive → Reason → Act → Observe → ↻</code>
+        Stateful loop. Has tools. Accumulates context. Decides what to do next.
+      </div>
+    </div>
+  </div>
+  <div class="callout border-d1" style="margin-top:16px;">
+    <div class="callout-title d1">The PRAO Loop</div>
+    <p><strong style="color:var(--white)">P</strong>erception → <strong style="color:var(--white)">R</strong>easoning → <strong style="color:var(--white)">A</strong>ction → <strong style="color:var(--white)">O</strong>bservation — the agent repeats this until done or stopped.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · The Differentiator</p>
+  <h2 class="slide-title">The <em style="color:var(--cyan);font-style:italic;">PRAO</em> Loop — what turns an LLM into an Agent</h2>
+
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PRAO loop: Perception, Reasoning, Action, Observation feeding back to Perception">
+      <defs>
+        <marker id="prao-arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+          <path d="M0,0 L8,4.5 L0,9 Z" fill="#94a3b8"/>
+        </marker>
+        <marker id="prao-loop" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M0,0 L8,5 L0,10 Z" fill="#22d3ee"/>
+        </marker>
+      </defs>
+
+      <rect x="6" y="6" width="748" height="268" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="18" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+
+      <!-- P -->
+      <rect x="20" y="58" width="140" height="92" rx="10" fill="rgba(59,130,246,.12)" stroke="#3b82f6" stroke-width="1.8"/>
+      <text x="90" y="92" text-anchor="middle" fill="#3b82f6" font-family="DM Serif Display, serif" font-size="30" font-weight="700">P</text>
+      <text x="90" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="13" font-weight="600">Perception</text>
+      <text x="90" y="136" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">read the world</text>
+      <text x="90" y="172" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">user prompt</text>
+      <text x="90" y="186" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">file · sensor · tool result</text>
+
+      <!-- R -->
+      <rect x="200" y="58" width="140" height="92" rx="10" fill="rgba(139,92,246,.12)" stroke="#8b5cf6" stroke-width="1.8"/>
+      <text x="270" y="92" text-anchor="middle" fill="#8b5cf6" font-family="DM Serif Display, serif" font-size="30" font-weight="700">R</text>
+      <text x="270" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="13" font-weight="600">Reasoning</text>
+      <text x="270" y="136" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">decide next step</text>
+      <text x="270" y="172" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">LLM call · plan</text>
+      <text x="270" y="186" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">pick tool / answer</text>
+
+      <!-- A -->
+      <rect x="380" y="58" width="140" height="92" rx="10" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1.8"/>
+      <text x="450" y="92" text-anchor="middle" fill="#f59e0b" font-family="DM Serif Display, serif" font-size="30" font-weight="700">A</text>
+      <text x="450" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="13" font-weight="600">Action</text>
+      <text x="450" y="136" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">change the world</text>
+      <text x="450" y="172" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">tool call · API hit</text>
+      <text x="450" y="186" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">run code · send msg</text>
+
+      <!-- O -->
+      <rect x="560" y="58" width="140" height="92" rx="10" fill="rgba(16,185,129,.12)" stroke="#10b981" stroke-width="1.8"/>
+      <text x="630" y="92" text-anchor="middle" fill="#10b981" font-family="DM Serif Display, serif" font-size="30" font-weight="700">O</text>
+      <text x="630" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="13" font-weight="600">Observation</text>
+      <text x="630" y="136" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">see what happened</text>
+      <text x="630" y="172" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">result · error</text>
+      <text x="630" y="186" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">env feedback</text>
+
+      <!-- Forward arrows -->
+      <path d="M 160 104 L 198 104" stroke="#94a3b8" stroke-width="1.6" fill="none" marker-end="url(#prao-arr)"/>
+      <path d="M 340 104 L 378 104" stroke="#94a3b8" stroke-width="1.6" fill="none" marker-end="url(#prao-arr)"/>
+      <path d="M 520 104 L 558 104" stroke="#94a3b8" stroke-width="1.6" fill="none" marker-end="url(#prao-arr)"/>
+
+      <!-- Loop-back arrow O → P (the differentiator) -->
+      <path d="M 630 150 Q 630 232 360 232 Q 90 232 90 150" stroke="#22d3ee" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#prao-loop)"/>
+      <text x="380" y="226" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" letter-spacing="1.5">↻ FEEDS NEXT TURN — UNTIL DONE OR STOPPED</text>
+
+      <!-- Stage labels above arrows -->
+      <text x="179" y="98" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="8">in</text>
+      <text x="359" y="98" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="8">think</text>
+      <text x="539" y="98" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="8">do</text>
+
+      <!-- Footer hint -->
+      <text x="380" y="262" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="10" font-style="italic">same LLM you'd call directly — now wrapped in a loop, with tools &amp; memory at hand</text>
+    </svg>
+  </div>
+
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card" style="border-color:rgba(244,63,94,.4);background:rgba(244,63,94,.05);">
+      <div class="card-title" style="color:var(--rose);">LLM alone = just R</div>
+      <p>One <strong style="color:var(--white)">R</strong>easoning step. No senses, no hands, no feedback. <code style="font-family:var(--ff-mono);color:var(--text);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">prompt → text</code> and it's over. Cannot check its own work.</p>
+    </div>
+    <div class="card" style="border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.05);">
+      <div class="card-title" style="color:var(--cyan);">Agent = LLM + Loop + Tools</div>
+      <p>Same LLM, now embedded in <strong style="color:var(--white)">P→R→A→O</strong>. It can <em>fetch</em> data, <em>call</em> tools, <em>see</em> results, and <em>retry</em> — adapting on every turn.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Foundations</p>
+  <h2 class="slide-title">Classic Agent Types <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">Russell &amp; Norvig · AIMA</span></h2>
+  <ul class="bullets" style="max-width:780px;">
+    <li><div class="bullet-dot" style="background:var(--rose)"></div><div><strong>Simple Reflex</strong> <span>— maps current percept directly to action via condition–action rules. No memory, no world model. Works only in fully observable environments. <em>e.g. thermostat, spam filter.</em></span></div></li>
+    <li><div class="bullet-dot" style="background:var(--amber)"></div><div><strong>Model-Based Reflex</strong> <span>— keeps internal state to track what it cannot currently see. A world model fills gaps in perception. <em>e.g. vacuum robot remembering cleaned rooms.</em></span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Goal-Based</strong> <span>— acts to reach explicit goals. Considers future consequences. Search and planning emerge here. <em>e.g. GPS routing, chess engine.</em></span></div></li>
+    <li><div class="bullet-dot" style="background:var(--teal)"></div><div><strong>Utility-Based</strong> <span>— picks the action with highest expected utility. Trades off competing goals — speed vs cost vs safety. <em>e.g. ride-share dispatcher, autonomous driving.</em></span></div></li>
+    <li><div class="bullet-dot" style="background:var(--purple)"></div><div><strong>Learning</strong> <span>— improves over time via a critic, learning element, and problem generator. Any of the above can become a learning agent. <em>e.g. AlphaGo, RLHF-tuned LLMs.</em></span></div></li>
+  </ul>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Architecture</p>
+  <h2 class="slide-title"><span style="color:var(--rose);">Simple Reflex</span> Agent</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Simple reflex agent architecture">
+      <defs>
+        <marker id="ar-rose-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#f43f5e"/></marker>
+        <marker id="ar-grey-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="10" y="10" width="740" height="280" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="22" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">ENVIRONMENT</text>
+      <rect x="30" y="40" width="700" height="240" rx="10" fill="none" stroke="rgba(244,63,94,.35)"/>
+      <text x="42" y="58" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+      <rect x="60" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="120" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Sensors</text>
+      <rect x="580" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="640" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Actuators</text>
+      <path d="M 120 106 L 120 152" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-grey-1)"/>
+      <text x="128" y="135" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">percept</text>
+      <rect x="60" y="155" width="200" height="56" rx="8" fill="rgba(244,63,94,.1)" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="160" y="181" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">What is the world</text>
+      <text x="160" y="199" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">like now?</text>
+      <path d="M 260 183 L 480 183" stroke="#f43f5e" stroke-width="1.5" fill="none" marker-end="url(#ar-rose-1)"/>
+      <rect x="480" y="155" width="220" height="56" rx="8" fill="rgba(244,63,94,.1)" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="590" y="181" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Condition–Action</text>
+      <text x="590" y="199" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Rules</text>
+      <path d="M 640 155 L 640 108" stroke="#f43f5e" stroke-width="1.5" fill="none" marker-end="url(#ar-rose-1)"/>
+      <text x="648" y="135" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">action</text>
+      <text x="380" y="244" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11">if percept matches rule.condition → fire rule.action</text>
+      <text x="380" y="266" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="11">No state · No memory · Reacts only to current percept</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--rose);">Key idea</div>
+      <p>A lookup table from percept to action. The fastest possible agent — and the most fragile. Loops forever if the same percept yields the wrong action.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Real example</div>
+      <p>Thermostat, regex-based spam filter, deterministic form validator, rate-limit middleware.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Architecture</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">Model-Based Reflex</span> Agent</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Model-based reflex agent architecture">
+      <defs>
+        <marker id="ar-amber-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#f59e0b"/></marker>
+        <marker id="ar-grey-2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="10" y="10" width="740" height="300" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="22" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">ENVIRONMENT</text>
+      <rect x="30" y="40" width="700" height="260" rx="10" fill="none" stroke="rgba(245,158,11,.35)"/>
+      <text x="42" y="58" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+      <rect x="60" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="120" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Sensors</text>
+      <rect x="580" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="640" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Actuators</text>
+      <path d="M 120 106 L 120 152" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-grey-2)"/>
+      <text x="128" y="135" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">percept</text>
+      <rect x="60" y="155" width="220" height="80" rx="8" fill="rgba(245,158,11,.1)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="170" y="180" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">State</text>
+      <text x="170" y="200" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">what the world</text>
+      <text x="170" y="218" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">is like now</text>
+      <rect x="320" y="155" width="170" height="34" rx="6" fill="rgba(245,158,11,.05)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="405" y="177" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">How world evolves</text>
+      <rect x="320" y="201" width="170" height="34" rx="6" fill="rgba(245,158,11,.05)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="405" y="223" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">What my actions do</text>
+      <path d="M 320 172 L 285 188" stroke="#f59e0b" stroke-width="1" fill="none" marker-end="url(#ar-amber-1)" opacity="0.75"/>
+      <path d="M 320 218 L 285 205" stroke="#f59e0b" stroke-width="1" fill="none" marker-end="url(#ar-amber-1)" opacity="0.75"/>
+      <rect x="510" y="166" width="190" height="56" rx="8" fill="rgba(245,158,11,.1)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="605" y="192" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Condition–Action</text>
+      <text x="605" y="210" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Rules</text>
+      <path d="M 280 195 L 510 194" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#ar-amber-1)"/>
+      <path d="M 640 166 L 640 108" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#ar-amber-1)"/>
+      <text x="648" y="135" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">action</text>
+      <path d="M 600 222 Q 480 280, 405 235" stroke="#f59e0b" stroke-width="1" fill="none" stroke-dasharray="2 3" marker-end="url(#ar-amber-1)" opacity="0.6"/>
+      <text x="500" y="270" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">last action feedback</text>
+      <text x="380" y="296" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="11">state ← update(state, percept, last_action, world_model)</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--amber);">Key idea</div>
+      <p>Adds an internal world model so the agent can act in <em>partially observable</em> environments. State is updated each tick from the percept and the last action.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Real example</div>
+      <p>Roomba mapping cleaned rooms, conversational chatbot with short-term memory, TCP retransmit logic.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Architecture</p>
+  <h2 class="slide-title"><span style="color:var(--d1);">Goal-Based</span> Agent</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Goal-based agent architecture">
+      <defs>
+        <marker id="ar-blue-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#3b82f6"/></marker>
+        <marker id="ar-grey-3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="10" y="10" width="740" height="300" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="22" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">ENVIRONMENT</text>
+      <rect x="30" y="40" width="700" height="260" rx="10" fill="none" stroke="rgba(59,130,246,.35)"/>
+      <text x="42" y="58" fill="#3b82f6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+      <rect x="60" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="120" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Sensors</text>
+      <rect x="580" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="640" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Actuators</text>
+      <path d="M 120 106 L 120 142" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-grey-3)"/>
+      <text x="128" y="128" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">percept</text>
+      <rect x="60" y="148" width="170" height="56" rx="8" fill="rgba(59,130,246,.1)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="145" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">State</text>
+      <text x="145" y="192" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">+ world model</text>
+      <rect x="280" y="148" width="200" height="56" rx="8" fill="rgba(59,130,246,.1)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="380" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">What happens</text>
+      <text x="380" y="192" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">if I do action A?</text>
+      <rect x="530" y="148" width="180" height="56" rx="8" fill="rgba(59,130,246,.18)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="620" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Action selector</text>
+      <text x="620" y="192" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">reach goal?</text>
+      <path d="M 230 176 L 280 176" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ar-blue-1)"/>
+      <path d="M 480 176 L 530 176" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ar-blue-1)"/>
+      <rect x="280" y="225" width="200" height="40" rx="6" fill="rgba(59,130,246,.06)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="380" y="250" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">Goals (deliver_pkg, reach_X)</text>
+      <path d="M 480 245 Q 540 245, 590 210" stroke="#3b82f6" stroke-width="1" fill="none" stroke-dasharray="3 3" marker-end="url(#ar-blue-1)" opacity="0.7"/>
+      <path d="M 640 148 L 640 108" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ar-blue-1)"/>
+      <text x="648" y="130" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">action</text>
+      <text x="380" y="290" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="11">action ← search/plan(state, goals)</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--d1);">Key idea</div>
+      <p>Action chosen by <em>simulating</em> outcomes against an explicit goal. Search and planning live here. Slower than reflex — but flexible when goals change.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Real example</div>
+      <p>GPS routing, chess engine minimax, build-system dependency resolver, plan-and-execute LLM agents.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Architecture</p>
+  <h2 class="slide-title"><span style="color:var(--teal);">Utility-Based</span> Agent</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Utility-based agent architecture">
+      <defs>
+        <marker id="ar-teal-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#14b8a6"/></marker>
+        <marker id="ar-grey-4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="10" y="10" width="740" height="300" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="22" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">ENVIRONMENT</text>
+      <rect x="30" y="40" width="700" height="260" rx="10" fill="none" stroke="rgba(20,184,166,.35)"/>
+      <text x="42" y="58" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+      <rect x="60" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="120" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Sensors</text>
+      <rect x="580" y="70" width="120" height="36" rx="18" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="640" y="93" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="13">Actuators</text>
+      <path d="M 120 106 L 120 142" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-grey-4)"/>
+      <text x="128" y="128" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">percept</text>
+      <rect x="60" y="148" width="170" height="56" rx="8" fill="rgba(20,184,166,.1)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="145" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">State</text>
+      <text x="145" y="192" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">+ world model</text>
+      <rect x="280" y="148" width="200" height="56" rx="8" fill="rgba(20,184,166,.1)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="380" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">What happens</text>
+      <text x="380" y="192" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">if I do action A?</text>
+      <rect x="530" y="148" width="180" height="56" rx="8" fill="rgba(20,184,166,.18)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="620" y="174" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">argmax(action)</text>
+      <text x="620" y="192" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">of utility</text>
+      <path d="M 230 176 L 280 176" stroke="#14b8a6" stroke-width="1.5" fill="none" marker-end="url(#ar-teal-1)"/>
+      <path d="M 480 176 L 530 176" stroke="#14b8a6" stroke-width="1.5" fill="none" marker-end="url(#ar-teal-1)"/>
+      <rect x="280" y="225" width="200" height="40" rx="6" fill="rgba(20,184,166,.06)" stroke="#14b8a6" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="380" y="250" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">U(state) → ℝ  · how happy?</text>
+      <path d="M 480 245 Q 540 245, 590 210" stroke="#14b8a6" stroke-width="1" fill="none" stroke-dasharray="3 3" marker-end="url(#ar-teal-1)" opacity="0.7"/>
+      <path d="M 640 148 L 640 108" stroke="#14b8a6" stroke-width="1.5" fill="none" marker-end="url(#ar-teal-1)"/>
+      <text x="648" y="130" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">action</text>
+      <text x="380" y="290" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="11">action ← argmax_a U(predict(state, a))</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--teal);">Key idea</div>
+      <p>Generalises goals to a continuous <em>utility function</em>. Trades off competing objectives — speed, cost, safety — and handles uncertainty via expected utility.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Real example</div>
+      <p>Ride-share dispatcher, autonomous-driving cost map, LLM-judge model routing (cheap vs accurate vs fast).</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Architecture</p>
+  <h2 class="slide-title"><span style="color:var(--purple);">Learning</span> Agent</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Learning agent architecture">
+      <defs>
+        <marker id="ar-purple-1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#8b5cf6"/></marker>
+        <marker id="ar-grey-5" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <rect x="10" y="10" width="740" height="300" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+      <text x="22" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">ENVIRONMENT</text>
+      <rect x="30" y="40" width="700" height="260" rx="10" fill="none" stroke="rgba(139,92,246,.35)"/>
+      <text x="42" y="58" fill="#8b5cf6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT (meta-architecture)</text>
+      <rect x="60" y="74" width="110" height="34" rx="17" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="115" y="96" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="12">Sensors</text>
+      <rect x="590" y="74" width="110" height="34" rx="17" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="645" y="96" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="12">Actuators</text>
+      <rect x="60" y="135" width="200" height="60" rx="8" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="160" y="161" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Critic</text>
+      <text x="160" y="180" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">measure vs standard</text>
+      <rect x="290" y="135" width="200" height="60" rx="8" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="390" y="161" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Learning Element</text>
+      <text x="390" y="180" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">improves the agent</text>
+      <rect x="520" y="135" width="200" height="60" rx="8" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="620" y="161" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Performance Element</text>
+      <text x="620" y="180" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">picks actions (any prior type)</text>
+      <rect x="290" y="220" width="200" height="50" rx="8" fill="rgba(139,92,246,.06)" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="390" y="244" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Problem Generator</text>
+      <text x="390" y="261" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">suggests exploratory actions</text>
+      <path d="M 115 108 Q 115 122, 160 135" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#ar-purple-1)"/>
+      <text x="60" y="125" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">feedback</text>
+      <path d="M 260 165 L 290 165" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#ar-purple-1)"/>
+      <path d="M 490 165 L 520 165" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#ar-purple-1)"/>
+      <text x="497" y="158" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">changes</text>
+      <path d="M 620 135 L 620 108" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#ar-purple-1)"/>
+      <text x="628" y="125" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">action</text>
+      <path d="M 390 220 L 390 195" stroke="#8b5cf6" stroke-width="1" fill="none" stroke-dasharray="3 3" marker-end="url(#ar-purple-1)" opacity="0.7"/>
+      <path d="M 490 245 Q 580 245, 620 195" stroke="#8b5cf6" stroke-width="1" fill="none" stroke-dasharray="3 3" marker-end="url(#ar-purple-1)" opacity="0.6"/>
+      <text x="380" y="294" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="11">Critic → Learning Element → updates Performance Element over time</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--purple);">Key idea</div>
+      <p>A meta-architecture that wraps any of the prior four. The Critic compares behaviour to a fixed standard; the Learning Element edits the Performance Element accordingly.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Real example</div>
+      <p>AlphaGo (self-play), RLHF-tuned LLMs, eval-driven prompt tuning, online recommender systems with bandit exploration.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Foundations</p>
+  <h2 class="slide-title">The Capability Ladder</h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(244,63,94,.15);color:var(--rose)">Reflex</span>
+    <span class="loop-arrow">+ state</span>
+    <span class="loop-node" style="background:rgba(245,158,11,.15);color:var(--amber)">Model-Based</span>
+    <span class="loop-arrow">+ goals</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">Goal-Based</span>
+    <span class="loop-arrow">+ preferences</span>
+    <span class="loop-node" style="background:rgba(20,184,166,.15);color:var(--teal)">Utility-Based</span>
+    <span class="loop-arrow">+ adaptation</span>
+    <span class="loop-node" style="background:rgba(139,92,246,.15);color:var(--purple)">Learning</span>
+    <div class="loop-note">Each type adds one capability the previous one lacked. Pick the simplest type that solves the problem.</div>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan)">Why this still matters</div>
+      <p>The lens is universal. An LLM agent is, in classic terms, a learning utility-based agent where language is both percept and action.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--rose)">The cardinal sin</div>
+      <p>Reaching for "learning" or "multi-agent" when a reflex rule would do. Complexity must be earned, not assumed.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.1 · Foundations</p>
+  <h2 class="slide-title">Classic Theory <span style="color:var(--text3);">→</span> LLM Era</h2>
+  <table class="ref-table">
+    <thead><tr><th>Classic type</th><th>LLM-era manifestation</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Simple Reflex</td><td>Stateless prompt → completion</td><td>Inline code suggestion</td></tr>
+      <tr><td>Model-Based Reflex</td><td>Conversation memory + tool calls</td><td>ReAct loop, Claude Code</td></tr>
+      <tr><td>Goal-Based</td><td>Plan-and-execute agents</td><td>Devin, AutoGPT</td></tr>
+      <tr><td>Utility-Based</td><td>Cost / latency / quality routing</td><td>Model routing, judge-based selection</td></tr>
+      <tr><td>Learning</td><td>RLHF, in-context learning, eval-driven loops</td><td>RLHF-tuned models, prompt-tuning harnesses</td></tr>
+    </tbody>
+  </table>
+  <div class="callout border-d1" style="margin-top:16px;">
+    <div class="callout-title d1">PEAS still applies</div>
+    <p>Before building, specify <strong style="color:var(--white)">P</strong>erformance measure, <strong style="color:var(--white)">E</strong>nvironment, <strong style="color:var(--white)">A</strong>ctuators (tools), <strong style="color:var(--white)">S</strong>ensors (inputs). The vocabulary is 30 years old and still correct.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">Framework Landscape</h2>
+  <table class="ref-table">
+    <thead><tr><th>Framework</th><th>Strength</th><th>Use When</th></tr></thead>
+    <tbody>
+      <tr><td>LangGraph ★</td><td>Explicit state graphs, checkpoints, HITL</td><td>Production agents needing control flow</td></tr>
+      <tr><td>CrewAI</td><td>Declarative role-based teams</td><td>Quick prototypes, role-driven workflows</td></tr>
+      <tr><td>AutoGen</td><td>Multi-agent natural language turns</td><td>Research, debate, collaborative tasks</td></tr>
+      <tr><td>LlamaIndex</td><td>Event-driven Workflows, 300+ data connectors, best-in-class RAG &amp; indexing</td><td>Data/RAG-first agents — doc Q&amp;A, knowledge bases, structured extraction</td></tr>
+      <tr><td>Google ADK</td><td>Multi-language (Py/TS/Go/Java), Session/State/Memory, A2A native</td><td>Production agents on Vertex AI / Gemini Enterprise</td></tr>
+      <tr><td>AWS Strands</td><td>Model-driven loop, MCP-native, OTel observability</td><td>Lean agents on AWS (Lambda, Bedrock AgentCore)</td></tr>
+    </tbody>
+  </table>
+  <div class="pills" style="margin-top:20px;">
+    <span class="pill d1" style="border-color:rgba(59,130,246,.4)">Hosted: Claude API</span>
+    <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.4)">Local: Ollama (llama3.2, qwen2.5-coder)</span>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">Tool Design Principles</h2>
+  <ul class="bullets" style="max-width:720px;">
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Precise names</strong> <span>— <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;">query_database</code> not <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;">query</code>. The name is the model's primary routing signal.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Docstring as contract</strong> <span>— describe what it does, each arg, what it returns, and hard constraints.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Structured returns</strong> <span>— return dicts, not raw strings. The model reasons about structure better than prose.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--d1)"></div><div><strong>Validate up front</strong> <span>— reject bad input immediately with a clear message. The model will read it and self-correct.</span></div></li>
+    <li><div class="bullet-dot" style="background:var(--rose)"></div><div><strong>Scope constraints</strong> <span>— never give an agent more access than it needs. Least privilege applies.</span></div></li>
+  </ul>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.2</p>
+  <h2 class="slide-title">ReAct Agent</h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">User message</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">LLM reasons</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(20,184,166,.15);color:var(--teal)">Tool call</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(245,158,11,.15);color:var(--amber)">Observation</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">LLM reasons</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(16,185,129,.15);color:var(--green)">Final answer</span>
+    <div class="loop-note">Repeat until no tool calls (end_turn) or MAX_ITERATIONS reached.</div>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">Max Iterations</div>
+      <p>Always set a hard cap (e.g. 15). Without it, the agent loops forever when stuck. Track <code style="font-size:.8em;font-family:var(--ff-mono);">iteration_count</code> in state.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--rose)">Error Classes</div>
+      <p><strong style="color:var(--white)">Hallucinated tool</strong> — explain & list valid names.<br/><strong style="color:var(--white)">Policy block</strong> — block, do not retry.<br/><strong style="color:var(--white)">Transient error</strong> — explain, let agent retry.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3</p>
+  <h2 class="slide-title">Plan & Execute</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--d1)">ReAct</div>
+      <div class="compare-body">Figures out the next step only after seeing the previous result. Reactive. Good for exploratory tasks.</div>
+    </div>
+    <div class="compare-col" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.25);">
+      <div class="compare-head" style="background:rgba(139,92,246,.12);color:var(--purple)">Plan & Execute</div>
+      <div class="compare-body">Generates full plan before first action. Replans on failure. Separates strategic thinking from execution.</div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--purple);margin-top:16px;">
+    <div class="callout-title" style="color:var(--purple)">The split</div>
+    <p><strong style="color:var(--white)">Planner</strong> (claude-sonnet, called once) → decomposes into 3–7 steps.<br/><strong style="color:var(--white)">Executor</strong> (claude-haiku + tools, called per step) → mini ReAct loop per step.<br/><strong style="color:var(--white)">Replanner</strong> → triggered on step failure, generates new plan from that point.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3</p>
+  <h2 class="slide-title">RAG for Agents</h2>
+  <div class="loop-flow" style="margin-bottom:16px;">
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">Query</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(59,130,246,.15);color:var(--d1)">Embed</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(20,184,166,.15);color:var(--teal)">Vector search</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(245,158,11,.15);color:var(--amber)">Top-K chunks</span>
+    <span class="loop-arrow">→</span>
+    <span class="loop-node" style="background:rgba(16,185,129,.15);color:var(--green)">Inject → LLM</span>
+    <div class="loop-note">In agents: retrieval is a tool — the agent decides when to call it, what to search, and how many results.</div>
+  </div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Knowledge Graph</div>
+      <p>Stores entities + relationships. Enables structured traversal queries. Complements vector search where relationships matter.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan)">Ragas Evaluation</div>
+      <p><strong style="color:var(--white)">Faithfulness</strong> — hallucination detection.<br/><strong style="color:var(--white)">Context Precision</strong> — retrieval relevance.<br/><strong style="color:var(--white)">Context Recall</strong> — retrieval completeness.<br/><strong style="color:var(--white)">Answer Relevancy</strong> — response quality.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Evaluation</p>
+  <h2 class="slide-title"><em style="color:var(--cyan);">Ragas</em> — How RAG Evaluation Actually Works</h2>
+  <div class="agent-arch" style="max-width:840px;">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ragas evaluation flow: sample inputs feed an LLM-as-judge that scores four RAG metrics">
+      <defs>
+        <marker id="rg-ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L7,4 L0,8 Z" fill="#3b82f6"/>
+        </marker>
+      </defs>
+
+      <!-- LEFT · evaluation sample -->
+      <text x="20" y="16" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">EVALUATION SAMPLE</text>
+      <rect x="20" y="26" width="220" height="36" rx="6" fill="rgba(34,211,238,.1)" stroke="#22d3ee"/>
+      <text x="32" y="42" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9">question</text>
+      <text x="32" y="56" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5">"Who acquired Acme and when?"</text>
+
+      <rect x="20" y="68" width="220" height="36" rx="6" fill="rgba(59,130,246,.1)" stroke="#3b82f6"/>
+      <text x="32" y="84" fill="#3b82f6" font-family="JetBrains Mono, monospace" font-size="9">answer · from your RAG</text>
+      <text x="32" y="98" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5">"TechCo acquired Acme in Q2 2024."</text>
+
+      <rect x="20" y="110" width="220" height="36" rx="6" fill="rgba(245,158,11,.1)" stroke="#f59e0b"/>
+      <text x="32" y="126" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9">retrieved_contexts · top-K</text>
+      <text x="32" y="140" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5">["Acme acquired by TechCo Q2…", …]</text>
+
+      <rect x="20" y="152" width="220" height="36" rx="6" fill="rgba(139,92,246,.1)" stroke="#8b5cf6"/>
+      <text x="32" y="168" fill="#8b5cf6" font-family="JetBrains Mono, monospace" font-size="9">ground_truth · optional</text>
+      <text x="32" y="182" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5">"TechCo acquired Acme in 2024."</text>
+
+      <!-- arrows in -->
+      <path d="M 244 44 L 318 100" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 244 86 L 318 110" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 244 128 L 318 122" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 244 170 L 318 134" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+
+      <!-- MIDDLE · LLM-as-judge -->
+      <rect x="320" y="68" width="172" height="100" rx="10" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="406" y="92" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">LLM-AS-JUDGE</text>
+      <text x="406" y="114" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">decompose &amp; score</text>
+      <text x="406" y="132" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">claims · sentences · entities</text>
+      <text x="406" y="154" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9.5">e.g. gpt-4o-mini</text>
+
+      <!-- arrows out -->
+      <path d="M 496 88 L 596 50" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 496 108 L 596 90" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 496 128 L 596 130" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+      <path d="M 496 148 L 596 170" stroke="#3b82f6" stroke-width="1.4" fill="none" marker-end="url(#rg-ar)"/>
+
+      <!-- RIGHT · metric scores -->
+      <text x="600" y="16" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">METRIC SCORES · 0–1</text>
+
+      <rect x="600" y="26" width="200" height="36" rx="6" fill="rgba(244,63,94,.1)" stroke="#f43f5e"/>
+      <text x="612" y="48" fill="#fff" font-family="Outfit, sans-serif" font-size="11.5">Faithfulness</text>
+      <text x="788" y="48" text-anchor="end" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">0.92</text>
+
+      <rect x="600" y="68" width="200" height="36" rx="6" fill="rgba(34,211,238,.1)" stroke="#22d3ee"/>
+      <text x="612" y="90" fill="#fff" font-family="Outfit, sans-serif" font-size="11.5">Answer Relevancy</text>
+      <text x="788" y="90" text-anchor="end" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">0.88</text>
+
+      <rect x="600" y="110" width="200" height="36" rx="6" fill="rgba(245,158,11,.1)" stroke="#f59e0b"/>
+      <text x="612" y="132" fill="#fff" font-family="Outfit, sans-serif" font-size="11.5">Context Precision</text>
+      <text x="788" y="132" text-anchor="end" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">0.75</text>
+
+      <rect x="600" y="152" width="200" height="36" rx="6" fill="rgba(139,92,246,.1)" stroke="#8b5cf6"/>
+      <text x="612" y="174" fill="#fff" font-family="Outfit, sans-serif" font-size="11.5">Context Recall</text>
+      <text x="788" y="174" text-anchor="end" fill="#8b5cf6" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">0.81</text>
+
+      <!-- BOTTOM · formula intuitions -->
+      <line x1="20" y1="206" x2="800" y2="206" stroke="#2a3a5c" stroke-dasharray="3 3"/>
+      <text x="20" y="226" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">UNDER THE HOOD · per metric</text>
+
+      <text x="20" y="248" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5"><tspan fill="#f43f5e" font-weight="600">Faithfulness</tspan> = claims in answer supported by context ÷ total claims  · catches hallucinations</text>
+      <text x="20" y="266" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5"><tspan fill="#22d3ee" font-weight="600">Answer Relevancy</tspan> = mean cosine sim( question , LLM-generated questions reverse-engineered from answer )</text>
+      <text x="20" y="284" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10.5"><tspan fill="#f59e0b" font-weight="600">Context Precision</tspan> = ranked relevance of retrieved chunks  ·  <tspan fill="#8b5cf6" font-weight="600">Context Recall</tspan> = ground-truth claims found in context</text>
+    </svg>
+  </div>
+  <div class="callout border-d1" style="margin-top:14px;max-width:840px;">
+    <div class="callout-title d1">Ship it · <span style="color:var(--text2);font-weight:500;text-transform:none;letter-spacing:0;">put it in CI</span></div>
+    <p><code style="font-family:var(--ff-mono);background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px;color:var(--cyan);">result = evaluate(dataset, metrics=[faithfulness, answer_relevancy, context_precision, context_recall])</code> — three metrics need <strong style="color:var(--white);">no ground truth</strong>, so you can run them on live traffic. Fail the build when Faithfulness drops below your threshold; the hallucination never ships.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Knowledge Graph</p>
+  <h2 class="slide-title">When Vector RAG <em>Hits a Wall</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vector RAG vs Knowledge Graph on a multi-hop query">
+      <defs>
+        <marker id="kg-ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#10b981"/></marker>
+      </defs>
+      <rect x="40" y="14" width="680" height="32" rx="16" fill="rgba(255,255,255,.05)" stroke="#94a3b8"/>
+      <text x="60" y="34" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="11">query:</text>
+      <text x="110" y="34" fill="#fff" font-family="Outfit, sans-serif" font-size="13">"What products does the company that acquired Acme sell?"</text>
+      <line x1="380" y1="60" x2="380" y2="280" stroke="#2a3a5c" stroke-dasharray="3 3"/>
+      <text x="20" y="74" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">VECTOR RAG · top-K chunks</text>
+      <rect x="20" y="84" width="350" height="38" rx="6" fill="rgba(244,63,94,.1)" stroke="#f43f5e" stroke-width="1.2"/>
+      <text x="32" y="100" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11" font-style="italic">"Acme was acquired in Q2 2024…"</text>
+      <text x="32" y="116" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">cosine 0.81 · about Acme</text>
+      <rect x="20" y="128" width="350" height="38" rx="6" fill="rgba(244,63,94,.1)" stroke="#f43f5e" stroke-width="1.2"/>
+      <text x="32" y="144" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11" font-style="italic">"TechCo's product line includes…"</text>
+      <text x="32" y="160" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">cosine 0.74 · about TechCo</text>
+      <rect x="20" y="172" width="350" height="38" rx="6" fill="rgba(244,63,94,.1)" stroke="#f43f5e" stroke-width="1.2"/>
+      <text x="32" y="188" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11" font-style="italic">"Tech-sector M&amp;A trends…"</text>
+      <text x="32" y="204" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">cosine 0.69 · distractor</text>
+      <text x="195" y="236" text-anchor="middle" fill="#f43f5e" font-family="Outfit, sans-serif" font-size="11" font-weight="600">✗ LLM must synthesise across chunks</text>
+      <text x="195" y="254" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">no single chunk contains the chained answer</text>
+      <text x="400" y="74" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">KNOWLEDGE GRAPH · traversal</text>
+      <circle cx="430" cy="115" r="24" fill="rgba(16,185,129,.2)" stroke="#10b981" stroke-width="2"/>
+      <text x="430" y="119" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="600">Acme</text>
+      <path d="M 454 115 L 556 115" stroke="#10b981" stroke-width="2" marker-end="url(#kg-ar)"/>
+      <text x="505" y="108" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">acquired_by</text>
+      <circle cx="580" cy="115" r="24" fill="rgba(16,185,129,.28)" stroke="#10b981" stroke-width="2"/>
+      <text x="580" y="119" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="600">TechCo</text>
+      <path d="M 580 139 L 580 174" stroke="#10b981" stroke-width="2" marker-end="url(#kg-ar)"/>
+      <text x="595" y="160" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">sells</text>
+      <rect x="410" y="180" width="78" height="32" rx="6" fill="rgba(16,185,129,.2)" stroke="#10b981" stroke-width="1.2"/>
+      <text x="449" y="200" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11">Widget</text>
+      <rect x="540" y="180" width="78" height="32" rx="6" fill="rgba(16,185,129,.2)" stroke="#10b981" stroke-width="1.2"/>
+      <text x="579" y="200" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11">Gadget</text>
+      <rect x="668" y="180" width="78" height="32" rx="6" fill="rgba(16,185,129,.2)" stroke="#10b981" stroke-width="1.2"/>
+      <text x="707" y="200" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11">Gizmo</text>
+      <path d="M 580 174 L 449 180" stroke="#10b981" stroke-width="1" opacity="0.55"/>
+      <path d="M 580 174 L 579 180" stroke="#10b981" stroke-width="1" opacity="0.55"/>
+      <path d="M 580 174 L 707 180" stroke="#10b981" stroke-width="1" opacity="0.55"/>
+      <text x="565" y="236" text-anchor="middle" fill="#10b981" font-family="Outfit, sans-serif" font-size="11" font-weight="600">✓ Direct multi-hop traversal</text>
+      <text x="565" y="254" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">answer = the nodes returned by the query</text>
+    </svg>
+  </div>
+  <div class="callout" style="border-color:var(--green);margin-top:14px;max-width:780px;">
+    <div class="callout-title" style="color:var(--green);">The fundamental difference</div>
+    <p>Vector RAG retrieves what is <strong style="color:var(--white);">similar</strong>. Knowledge Graphs retrieve what is <strong style="color:var(--white);">related</strong>. Multi-hop queries — "X of Y of Z" — are where similarity quietly fails and relations win.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Knowledge Graph</p>
+  <h2 class="slide-title">Six Wins for <em>Knowledge Graphs</em></h2>
+  <table class="ref-table" style="max-width:820px;">
+    <thead><tr><th>Dimension</th><th>Vector RAG</th><th style="color:var(--green);">Knowledge Graph</th></tr></thead>
+    <tbody>
+      <tr><td>Multi-hop reasoning</td><td>Brittle — synthesis across chunks</td><td>Native — graph traversal</td></tr>
+      <tr><td>Explainability</td><td>Opaque cosine scores</td><td>The path <em>is</em> the answer</td></tr>
+      <tr><td>Determinism</td><td>Embedding drift between models</td><td>Exact traversal — same query, same path</td></tr>
+      <tr><td>Schema</td><td>None — free text</td><td>Typed entities &amp; relations</td></tr>
+      <tr><td>Aggregations</td><td>Very limited</td><td>Count, group, filter, shortest-path</td></tr>
+      <tr><td>Phantom entities</td><td>Hallucination risk</td><td>Only existing nodes can be returned</td></tr>
+    </tbody>
+  </table>
+  <div class="grid-2" style="max-width:820px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--green);">Best-fit domains</div>
+      <p>Org charts, supply chains, compliance &amp; regulation, code dependencies, drug interactions, fraud rings — anywhere relations are the data.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">The trade-off</div>
+      <p>Index-time cost rises — entity extraction (LLM-driven) and schema discipline are required. Setup days, not minutes.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Knowledge Graph</p>
+  <h2 class="slide-title">GraphRAG — <em>The Hybrid Pattern</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hybrid GraphRAG query-time pipeline">
+      <defs>
+        <marker id="hy-ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#22d3ee"/></marker>
+      </defs>
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">QUERY-TIME · HYBRID GRAPHRAG</text>
+      <rect x="30" y="56" width="120" height="50" rx="8" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="90" y="78" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Query</text>
+      <text x="90" y="96" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">user question</text>
+      <path d="M 150 81 L 173 81" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#hy-ar)"/>
+      <rect x="175" y="56" width="120" height="50" rx="8" fill="rgba(244,63,94,.15)" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="235" y="78" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Vector seed</text>
+      <text x="235" y="96" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">find entry nodes</text>
+      <path d="M 295 81 L 318 81" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#hy-ar)"/>
+      <rect x="320" y="56" width="120" height="50" rx="8" fill="rgba(16,185,129,.15)" stroke="#10b981" stroke-width="1.5"/>
+      <text x="380" y="78" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Graph expand</text>
+      <text x="380" y="96" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">1–2 hop traversal</text>
+      <path d="M 440 81 L 463 81" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#hy-ar)"/>
+      <rect x="465" y="56" width="120" height="50" rx="8" fill="rgba(20,184,166,.15)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="525" y="78" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Subgraph</text>
+      <text x="525" y="96" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">facts as context</text>
+      <path d="M 585 81 L 608 81" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#hy-ar)"/>
+      <rect x="610" y="56" width="120" height="50" rx="8" fill="rgba(139,92,246,.15)" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="670" y="78" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">LLM</text>
+      <text x="670" y="96" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">grounded answer</text>
+      <text x="235" y="130" text-anchor="middle" fill="#f43f5e" font-family="Outfit, sans-serif" font-size="10" font-weight="700" letter-spacing="2">SIMILARITY</text>
+      <text x="380" y="130" text-anchor="middle" fill="#10b981" font-family="Outfit, sans-serif" font-size="10" font-weight="700" letter-spacing="2">RELATIONS</text>
+      <text x="525" y="130" text-anchor="middle" fill="#14b8a6" font-family="Outfit, sans-serif" font-size="10" font-weight="700" letter-spacing="2">GROUNDING</text>
+      <line x1="60" y1="160" x2="730" y2="160" stroke="#2a3a5c" stroke-dasharray="2 4"/>
+      <text x="380" y="180" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="10" font-style="italic">Index-time: LLM extracts entities + relations from each chunk → graph DB &amp; vector index of entity descriptions</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan);">Use both when</div>
+      <p>Relational queries on top of an unstructured corpus, audit-required answers, "list / count / who-related-to-whom" questions over enterprise knowledge.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">Stick with vector RAG when</div>
+      <p>Pure semantic search, long-form prose Q&amp;A, fast iteration, no clear entity schema. Don't pay the GraphRAG tax for similarity-only problems.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking</p>
+  <h2 class="slide-title">Why <em>Chunking</em> Matters</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chunk size sweet spot">
+      <defs>
+        <linearGradient id="goldi-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.55"/>
+          <stop offset="30%" stop-color="#10b981" stop-opacity="0.55"/>
+          <stop offset="70%" stop-color="#10b981" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.55"/>
+        </linearGradient>
+      </defs>
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">CHUNK SIZE SPECTRUM</text>
+      <text x="100" y="56" text-anchor="middle" fill="#f43f5e" font-family="Outfit, sans-serif" font-size="12" font-weight="700">Fragmented</text>
+      <text x="100" y="72" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">no surrounding context</text>
+      <text x="380" y="56" text-anchor="middle" fill="#10b981" font-family="Outfit, sans-serif" font-size="12" font-weight="700">Sweet spot</text>
+      <text x="380" y="72" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">256 – 1024 tokens</text>
+      <text x="660" y="56" text-anchor="middle" fill="#f43f5e" font-family="Outfit, sans-serif" font-size="12" font-weight="700">Diluted</text>
+      <text x="660" y="72" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10">multiple topics per chunk</text>
+      <rect x="40" y="86" width="680" height="34" rx="17" fill="url(#goldi-grad)" stroke="#2a3a5c"/>
+      <line x1="380" y1="82" x2="380" y2="124" stroke="#10b981" stroke-width="2" stroke-dasharray="3 3"/>
+      <circle cx="380" cy="103" r="6" fill="#10b981"/>
+      <text x="40" y="142" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">~50</text>
+      <text x="200" y="142" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">~150</text>
+      <text x="380" y="142" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">~512</text>
+      <text x="560" y="142" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">~2048</text>
+      <text x="720" y="142" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">~4096 tok</text>
+      <text x="380" y="178" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="11" font-style="italic">No universal answer · domain + embedding model dictate the band</text>
+    </svg>
+  </div>
+  <div class="grid-3" style="max-width:820px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--rose);">Too small</div>
+      <p>Snippets ripped from context. Retrieval finds the right line but the LLM has nothing to reason with.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--amber);">Too large</div>
+      <p>Multiple topics averaged into one embedding vector. Cosine similarity drops, retrieval misses, irrelevant text fills the context window.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--rose);">Wrong boundary</div>
+      <p>Cuts mid-sentence or mid-code-block. Embedding distorted, LLM sees grammatically broken text.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking · Strategy 1</p>
+  <h2 class="slide-title"><span style="color:var(--rose);">Fixed-Size</span> + Overlap</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fixed-size chunking with sliding overlap">
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SOURCE TEXT</text>
+      <rect x="40" y="32" width="680" height="22" rx="3" fill="#1a2340" stroke="#2a3a5c"/>
+      <text x="380" y="48" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="10">…the quick brown fox jumps over the lazy dog. The dog barked at the moon…</text>
+      <text x="22" y="80" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">CHUNKS  ·  size = 512  ·  overlap = 50</text>
+      <rect x="40" y="92" width="240" height="28" rx="4" fill="rgba(244,63,94,.18)" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="48" y="110" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">chunk 1</text>
+      <text x="270" y="110" text-anchor="end" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">[0 — 512]</text>
+      <rect x="240" y="128" width="240" height="28" rx="4" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="248" y="146" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">chunk 2</text>
+      <text x="470" y="146" text-anchor="end" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">[462 — 974]</text>
+      <rect x="440" y="164" width="240" height="28" rx="4" fill="rgba(59,130,246,.18)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="448" y="182" fill="#fff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">chunk 3</text>
+      <text x="670" y="182" text-anchor="end" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">[924 — 1436]</text>
+      <rect x="240" y="92" width="40" height="28" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="0.6" stroke-dasharray="2 2"/>
+      <rect x="440" y="128" width="40" height="28" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="0.6" stroke-dasharray="2 2"/>
+      <line x1="260" y1="92" x2="260" y2="80" stroke="#cbd5e1" stroke-width="0.8"/>
+      <line x1="260" y1="80" x2="320" y2="80" stroke="#cbd5e1" stroke-width="0.8"/>
+      <text x="324" y="83" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">overlap region</text>
+      <text x="380" y="220" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="11" font-style="italic">stride = chunk_size − overlap. Typical overlap: 10–20% of chunk_size.</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--rose);">When to use</div>
+      <p>Plain unstructured text, demos, baseline benchmarks. Fast and predictable — sometimes "good enough" is the right answer.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">Watch out for</div>
+      <p>Cuts code blocks, tables, JSON, and Markdown headings in half. Storage cost grows linearly with overlap percentage.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking · Strategy 2</p>
+  <h2 class="slide-title"><span style="color:var(--d1);">Recursive Character</span> Splitting</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recursive separator fallback chain">
+      <defs>
+        <marker id="ar-fall" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SEPARATOR FALLBACK CHAIN</text>
+      <rect x="25" y="50" width="130" height="80" rx="8" fill="rgba(59,130,246,.18)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="90" y="80" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">\n\n</text>
+      <text x="90" y="103" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">paragraph</text>
+      <text x="90" y="120" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">priority 1</text>
+      <path d="M 155 90 L 168 90" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-fall)"/>
+      <text x="162" y="78" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9">›limit</text>
+      <rect x="170" y="50" width="130" height="80" rx="8" fill="rgba(34,211,238,.18)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="235" y="80" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">\n</text>
+      <text x="235" y="103" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">line</text>
+      <text x="235" y="120" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">priority 2</text>
+      <path d="M 300 90 L 313 90" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-fall)"/>
+      <text x="307" y="78" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9">›limit</text>
+      <rect x="315" y="50" width="130" height="80" rx="8" fill="rgba(20,184,166,.18)" stroke="#14b8a6" stroke-width="1.5"/>
+      <text x="380" y="80" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">". "</text>
+      <text x="380" y="103" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">sentence</text>
+      <text x="380" y="120" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">priority 3</text>
+      <path d="M 445 90 L 458 90" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-fall)"/>
+      <text x="452" y="78" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9">›limit</text>
+      <rect x="460" y="50" width="130" height="80" rx="8" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="525" y="80" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">" "</text>
+      <text x="525" y="103" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">word</text>
+      <text x="525" y="120" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">priority 4</text>
+      <path d="M 590 90 L 603 90" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-fall)"/>
+      <text x="597" y="78" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9">›limit</text>
+      <rect x="605" y="50" width="130" height="80" rx="8" fill="rgba(244,63,94,.18)" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="670" y="82" text-anchor="middle" fill="#fff" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700">char</text>
+      <text x="670" y="103" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">last resort</text>
+      <text x="670" y="120" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">priority 5</text>
+      <text x="380" y="166" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="11">if any chunk ≤ chunk_size  →  ✓ keep this split</text>
+      <text x="380" y="200" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="11" font-style="italic">LangChain RecursiveCharacterTextSplitter — separators tried in order until each chunk fits</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--d1);">When to use</div>
+      <p>Default for prose: docs, articles, blog posts, support tickets. Respects natural boundaries opportunistically — almost always beats fixed-size.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">Watch out for</div>
+      <p>Default separator list is English-centric. Code, JSON, and structured formats need a custom list — <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;">Language.PYTHON</code>, <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;">Language.MARKDOWN</code>.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking · Strategy 3</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">Document-Aware</span> Chunking</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Document structure preserved as chunk metadata">
+      <defs>
+        <marker id="ar-doc" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#f59e0b"/></marker>
+      </defs>
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SOURCE (Markdown)</text>
+      <rect x="20" y="32" width="320" height="232" rx="8" fill="rgba(245,158,11,.04)" stroke="#2a3a5c"/>
+      <text x="32" y="56" fill="#fff" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700"># Authentication</text>
+      <text x="32" y="74" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">Brief intro paragraph…</text>
+      <text x="40" y="104" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">## OAuth</text>
+      <text x="40" y="122" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">OAuth flow details…</text>
+      <text x="48" y="146" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">### PKCE</text>
+      <text x="48" y="162" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">Code-challenge…</text>
+      <text x="40" y="194" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">## API Keys</text>
+      <text x="40" y="212" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">Key rotation…</text>
+      <text x="40" y="230" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10">Secret storage…</text>
+      <path d="M 350 148 L 400 148" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#ar-doc)"/>
+      <text x="375" y="138" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">split by</text>
+      <text x="375" y="166" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">heading</text>
+      <text x="408" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">CHUNKS WITH HIERARCHY</text>
+      <rect x="408" y="32" width="332" height="48" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="416" y="50" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="700">Chunk 1 · Authentication</text>
+      <text x="416" y="68" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">{ h1: "Authentication" }</text>
+      <rect x="408" y="86" width="332" height="48" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="416" y="104" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="700">Chunk 2 · OAuth</text>
+      <text x="416" y="122" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">{ h1: "Authentication", h2: "OAuth" }</text>
+      <rect x="408" y="140" width="332" height="48" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="416" y="158" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="700">Chunk 3 · PKCE</text>
+      <text x="416" y="176" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">{ h1: "Authentication", h2: "OAuth", h3: "PKCE" }</text>
+      <rect x="408" y="194" width="332" height="48" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="416" y="212" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="700">Chunk 4 · API Keys</text>
+      <text x="416" y="230" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">{ h1: "Authentication", h2: "API Keys" }</text>
+      <text x="380" y="266" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="11" font-style="italic">Each chunk inherits its heading path as searchable metadata</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--amber);">When to use</div>
+      <p>Markdown, HTML, source code, RST, JSON. Anywhere structure exists, exploit it — the boundaries were already labelled by the author.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">Watch out for</div>
+      <p>Sections vary wildly in size — combine with a size-based splitter inside each section. Useless on plain prose.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking · Strategy 4</p>
+  <h2 class="slide-title"><span style="color:var(--teal);">Semantic</span> Chunking</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Semantic chunking by cosine distance peaks between sentences">
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">COSINE DISTANCE BETWEEN ADJACENT SENTENCES</text>
+      <line x1="50" y1="40" x2="50" y2="170" stroke="#2a3a5c" stroke-width="1"/>
+      <text x="44" y="44" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">1.0</text>
+      <text x="44" y="108" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">0.5</text>
+      <text x="44" y="172" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">0.0</text>
+      <line x1="50" y1="170" x2="730" y2="170" stroke="#2a3a5c" stroke-width="1"/>
+      <line x1="50" y1="80" x2="730" y2="80" stroke="#f43f5e" stroke-width="1" stroke-dasharray="4 4" opacity="0.7"/>
+      <text x="730" y="76" text-anchor="end" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9">threshold (95th pct)</text>
+      <polyline points="80,150 138,148 196,144 254,55 312,142 370,138 428,60 486,140 544,135 602,138 660,68 718,142" fill="none" stroke="#14b8a6" stroke-width="2"/>
+      <g>
+        <circle cx="80" cy="150" r="3" fill="#14b8a6"/>
+        <circle cx="138" cy="148" r="3" fill="#14b8a6"/>
+        <circle cx="196" cy="144" r="3" fill="#14b8a6"/>
+        <circle cx="254" cy="55" r="4.5" fill="#f43f5e"/>
+        <circle cx="312" cy="142" r="3" fill="#14b8a6"/>
+        <circle cx="370" cy="138" r="3" fill="#14b8a6"/>
+        <circle cx="428" cy="60" r="4.5" fill="#f43f5e"/>
+        <circle cx="486" cy="140" r="3" fill="#14b8a6"/>
+        <circle cx="544" cy="135" r="3" fill="#14b8a6"/>
+        <circle cx="602" cy="138" r="3" fill="#14b8a6"/>
+        <circle cx="660" cy="68" r="4.5" fill="#f43f5e"/>
+        <circle cx="718" cy="142" r="3" fill="#14b8a6"/>
+      </g>
+      <line x1="254" y1="40" x2="254" y2="170" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/>
+      <line x1="428" y1="40" x2="428" y2="170" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/>
+      <line x1="660" y1="40" x2="660" y2="170" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/>
+      <text x="254" y="36" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">› cut</text>
+      <text x="428" y="36" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">› cut</text>
+      <text x="660" y="36" text-anchor="middle" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">› cut</text>
+      <text x="167" y="190" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">topic A</text>
+      <text x="341" y="190" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">topic B</text>
+      <text x="544" y="190" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">topic C</text>
+      <text x="694" y="190" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">topic D</text>
+      <text x="50" y="218" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">sentence i</text>
+      <text x="730" y="218" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">sentence n</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--teal);">When to use</div>
+      <p>Long-form technical writing where topics shift mid-section: research papers, transcripts, mixed-topic blog posts. Quality over speed.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);">Watch out for</div>
+      <p>Slow — embeds every sentence at index time. Threshold tuning required. Falls back to recursive splitting if all sentences look similar.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="1">
+  <p class="eyebrow d1">Session 1.3 · Chunking · Strategy 5</p>
+  <h2 class="slide-title"><span style="color:var(--purple);">Parent-Child</span> &amp; What's Next</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hierarchical small-to-big retrieval">
+      <defs>
+        <marker id="ar-pc" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#8b5cf6"/></marker>
+        <marker id="ar-pc-grey" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+      </defs>
+      <text x="22" y="22" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">SMALL-TO-BIG RETRIEVAL</text>
+      <rect x="240" y="36" width="280" height="44" rx="8" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="380" y="56" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="13" font-weight="700">Parent Document</text>
+      <text x="380" y="72" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">~2000 tokens · stored, NOT embedded</text>
+      <line x1="290" y1="80" x2="130" y2="120" stroke="#8b5cf6" stroke-width="1" opacity="0.5"/>
+      <line x1="340" y1="80" x2="295" y2="120" stroke="#8b5cf6" stroke-width="1" opacity="0.5"/>
+      <line x1="420" y1="80" x2="465" y2="120" stroke="#8b5cf6" stroke-width="1" opacity="0.5"/>
+      <line x1="470" y1="80" x2="630" y2="120" stroke="#8b5cf6" stroke-width="1" opacity="0.5"/>
+      <rect x="60" y="120" width="140" height="44" rx="8" fill="rgba(139,92,246,.08)" stroke="#8b5cf6" stroke-width="1.2"/>
+      <text x="130" y="140" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">Child 1</text>
+      <text x="130" y="156" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">~200 tok · embedded</text>
+      <rect x="225" y="120" width="140" height="44" rx="8" fill="rgba(139,92,246,.08)" stroke="#8b5cf6" stroke-width="1.2"/>
+      <text x="295" y="140" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">Child 2</text>
+      <text x="295" y="156" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">~200 tok · embedded</text>
+      <rect x="395" y="120" width="140" height="44" rx="8" fill="rgba(139,92,246,.28)" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="465" y="140" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="700">Child 3 ← match</text>
+      <text x="465" y="156" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">cosine 0.91</text>
+      <rect x="560" y="120" width="140" height="44" rx="8" fill="rgba(139,92,246,.08)" stroke="#8b5cf6" stroke-width="1.2"/>
+      <text x="630" y="140" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="11">Child 4</text>
+      <text x="630" y="156" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">~200 tok · embedded</text>
+      <rect x="20" y="190" width="120" height="34" rx="17" fill="#0f1524" stroke="#94a3b8"/>
+      <text x="80" y="212" text-anchor="middle" fill="#e2e8f0" font-family="Outfit, sans-serif" font-size="12">query</text>
+      <path d="M 140 207 Q 290 215, 425 165" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#ar-pc-grey)"/>
+      <text x="240" y="200" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">1. match small child</text>
+      <path d="M 510 120 Q 560 100, 510 80" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#ar-pc)"/>
+      <text x="555" y="105" fill="#8b5cf6" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">2. return parent</text>
+      <text x="380" y="232" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="11" font-style="italic">Embed the precise (small) — return the contextual (large)</text>
+    </svg>
+  </div>
+  <div class="grid-2" style="max-width:780px;margin-top:14px;">
+    <div class="card">
+      <div class="card-title" style="color:var(--purple);">When to use</div>
+      <p>When small chunks improve retrieval precision but the LLM needs surrounding context. <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;">ParentDocumentRetriever</code> (LangChain), <code style="font-family:var(--ff-mono);font-size:.85em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;">SmallToBigRetriever</code> (LlamaIndex).</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan);">Advanced (2024+)</div>
+      <p><strong style="color:var(--white);">Contextual Retrieval</strong> (Anthropic) — prepend an LLM-generated context blurb to each chunk; ~49% retrieval-failure reduction.<br/><strong style="color:var(--white);">Late Chunking</strong> (Jina AI) — embed the whole doc with a long-context model, <em>then</em> chunk the embeddings.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ─────────── CHROME ─────────── -->
+<div id="chrome">
+  <button class="nav-btn" id="btn-prev" title="Previous (←)">←</button>
+  <button class="nav-btn" id="btn-next" title="Next (→ or Space)">→</button>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <span id="slide-counter">1 / 1</span>
+  <span id="day-indicator">Intro</span>
+</div>
+
+<div id="key-hint">← → Space to navigate</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let current = 0;
+
+const fill = document.getElementById('progress-fill');
+const counter = document.getElementById('slide-counter');
+const dayInd = document.getElementById('day-indicator');
+const keyHint = document.getElementById('key-hint');
+
+const dayConfig = {
+  0: { label: 'Intro',  color: '#22d3ee' },
+  1: { label: 'Day 1',  color: '#3b82f6' },
+  2: { label: 'Day 2',  color: '#14b8a6' },
+  3: { label: 'Day 3',  color: '#8b5cf6' },
+};
+
+function goTo(n, direction = 1) {
+  if (n < 0 || n >= total) return;
+  const prev = slides[current];
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 300);
+
+  current = n;
+  slides[current].classList.add('active');
+
+  // Progress
+  fill.style.width = ((current / (total - 1)) * 100) + '%';
+  counter.textContent = (current + 1) + ' / ' + total;
+
+  // Day indicator
+  const day = parseInt(slides[current].dataset.day || '0');
+  const cfg = dayConfig[day] || dayConfig[0];
+  dayInd.textContent = cfg.label;
+  dayInd.style.color = cfg.color;
+}
+
+document.getElementById('btn-prev').addEventListener('click', () => goTo(current - 1, -1));
+document.getElementById('btn-next').addEventListener('click', () => goTo(current + 1, 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1, 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, -1); }
+  if (e.key === 'Home') goTo(0);
+  if (e.key === 'End') goTo(total - 1);
+});
+
+// Touch swipe
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) goTo(dx < 0 ? current + 1 : current - 1);
+}, { passive: true });
+
+// Hide key hint after 4s
+setTimeout(() => keyHint.classList.add('hidden'), 4000);
+
+// Init
+goTo(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Day 3 - Multi-Agent Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #0a0e1a;
+  --bg2:     #0f1524;
+  --surface: #1a2340;
+  --border:  #2a3a5c;
+  --blue:    #3b82f6;
+  --cyan:    #22d3ee;
+  --teal:    #14b8a6;
+  --green:   #10b981;
+  --amber:   #f59e0b;
+  --rose:    #f43f5e;
+  --purple:  #8b5cf6;
+  --text:    #e2e8f0;
+  --text2:   #94a3b8;
+  --text3:   #64748b;
+  --white:   #ffffff;
+  --d1:      #3b82f6;
+  --d2:      #14b8a6;
+  --d3:      #8b5cf6;
+  --ff-disp: 'DM Serif Display', Georgia, serif;
+  --ff-body: 'Outfit', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+}
+
+/* ── DECK ── */
+#deck {
+  width: 100%; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 48px 72px;
+  opacity: 0; pointer-events: none;
+  transform: translateX(40px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.slide.active {
+  opacity: 1; pointer-events: all;
+  transform: translateX(0);
+}
+.slide.exit {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-40px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+/* ── SLIDE TYPES ── */
+
+/* Cover */
+.slide-cover {
+  background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(59,130,246,.12) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 80% at 20% 80%, rgba(34,211,238,.07) 0%, transparent 70%),
+              var(--bg);
+  text-align: center;
+}
+
+/* Day break */
+.slide-day {
+  text-align: center;
+}
+
+/* Standard */
+.slide-content {
+  align-items: center;
+}
+
+/* ── CHROME ── */
+#chrome {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 100;
+}
+
+#progress-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+
+#slide-counter {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+#day-indicator {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--surface);
+  transition: color .3s, background .3s;
+}
+
+.nav-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 14px;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.nav-btn:hover { background: var(--border); color: var(--white); }
+
+/* ── TYPOGRAPHY ── */
+.eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: .7;
+}
+
+.slide-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 28px;
+}
+.slide-title em { font-style: italic; }
+
+.cover-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.cover-title em { color: var(--cyan); font-style: italic; }
+
+.day-title {
+  font-family: var(--ff-disp);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+
+.cover-sub {
+  font-size: 1.1rem;
+  color: var(--text2);
+  margin-bottom: 36px;
+  max-width: 540px;
+}
+
+/* ── PILLS ROW ── */
+.pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 20px;
+}
+.pill {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+
+/* ── BULLET LIST ── */
+.bullets {
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+}
+.bullets li {
+  display: flex; align-items: flex-start;
+  gap: 12px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.bullet-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+.bullets li strong { color: var(--white); }
+.bullets li span { color: var(--text2); }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 780px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: 100%; max-width: 820px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; width: 100%; max-width: 860px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.card-num {
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  margin-bottom: 6px;
+}
+.card-title {
+  font-size: .88rem; font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--white);
+}
+.card p {
+  font-size: .8rem; color: var(--text2);
+  line-height: 1.55;
+}
+.card .tag {
+  font-family: var(--ff-mono);
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  display: inline-block; padding: 2px 7px;
+  border-radius: 3px; margin-bottom: 8px;
+}
+
+/* ── COMPARE ── */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 760px; }
+.compare-col { border-radius: 10px; overflow: hidden; }
+.compare-head { padding: 10px 14px; font-size: .78rem; font-weight: 600; }
+.compare-body { padding: 14px; font-size: .85rem; color: var(--text2); line-height: 1.6; }
+.compare-body code {
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  display: block;
+  background: rgba(255,255,255,.05);
+  padding: 8px 10px; border-radius: 6px;
+  margin-bottom: 8px; color: var(--text);
+}
+
+/* ── DIAGRAM BOX ── */
+.diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  font-family: var(--ff-mono);
+  font-size: .78rem;
+  line-height: 1.6;
+  color: var(--text2);
+  width: 100%; max-width: 700px;
+  white-space: pre;
+}
+
+/* ── TABLE ── */
+.ref-table { width: 100%; max-width: 740px; border-collapse: collapse; }
+.ref-table th {
+  text-align: left; padding: 8px 14px;
+  font-family: var(--ff-mono); font-size: .72rem;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.ref-table td {
+  padding: 9px 14px;
+  font-size: .85rem; color: var(--text2);
+  border-bottom: 1px solid rgba(42,58,92,.5);
+  line-height: 1.5;
+}
+.ref-table td:first-child { color: var(--white); font-weight: 500; }
+.ref-table tr:last-child td { border-bottom: none; }
+
+/* ── CALLOUT ── */
+.callout {
+  border-radius: 10px;
+  padding: 14px 18px;
+  border-left: 3px solid;
+  background: var(--surface);
+  width: 100%; max-width: 700px;
+  margin-top: 4px;
+}
+.callout-title {
+  font-family: var(--ff-mono);
+  font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 6px;
+}
+.callout p { font-size: .88rem; color: var(--text2); line-height: 1.6; }
+
+/* ── LOOP FLOW ── */
+.loop-flow {
+  display: flex; align-items: center;
+  flex-wrap: wrap; gap: 6px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%; max-width: 700px;
+}
+.loop-node {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: .8rem; font-weight: 600;
+  white-space: nowrap;
+}
+.loop-arrow { color: var(--text3); font-size: .9rem; }
+.loop-note {
+  width: 100%; margin-top: 10px;
+  font-size: .78rem; color: var(--text3);
+  font-style: italic;
+}
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: flex; gap: 24px;
+  margin-top: 8px;
+}
+.stat { text-align: center; }
+.stat-val {
+  font-family: var(--ff-disp);
+  font-size: 2.2rem;
+  color: var(--cyan);
+  line-height: 1;
+}
+.stat-lbl {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-top: 4px;
+}
+
+/* ── TOPOLOGY GRID ── */
+.topo-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; width: 100%; max-width: 820px;
+}
+.topo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.topo-name {
+  font-weight: 600; font-size: .85rem;
+  color: var(--white); margin-bottom: 4px;
+}
+.topo-use {
+  font-size: .76rem; color: var(--text2);
+  line-height: 1.5;
+}
+.topo-pattern {
+  font-family: var(--ff-mono);
+  font-size: .68rem; color: var(--text3);
+  margin-top: 6px; white-space: pre-line;
+}
+
+/* ── D1 / D2 / D3 accents ── */
+.d1 { color: var(--d1); }
+.d2 { color: var(--d2); }
+.d3 { color: var(--d3); }
+.bg-d1 { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.3); }
+.bg-d2 { background: rgba(20,184,166,.12); border-color: rgba(20,184,166,.3); }
+.bg-d3 { background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.3); }
+.border-d1 { border-color: var(--d1); }
+.border-d2 { border-color: var(--d2); }
+.border-d3 { border-color: var(--d3); }
+
+/* ── AGENT ARCHITECTURE DIAGRAM ── */
+.agent-arch {
+  width: 100%; max-width: 780px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+.agent-arch svg { width: 100%; height: auto; display: block; }
+.agent-arch + .grid-2 { margin-top: 14px; }
+
+/* ── KEYBOARD HINT ── */
+#key-hint {
+  position: fixed; bottom: 64px; right: 24px;
+  font-family: var(--ff-mono);
+  font-size: 10px; color: var(--text3);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 6px;
+  opacity: 1;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+#key-hint.hidden { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<div class="slide slide-day" data-day="3">
+  <p class="eyebrow d3">Day Three</p>
+  <h2 class="day-title">Multi-Agent Systems</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:480px;">Six topology patterns, agent-to-agent protocols (A2A, ACP), evaluation frameworks, and capstone project.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">6 Topologies</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">A2A Protocol</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">ACP Protocol</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Tool Call Accuracy</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Trajectory Eval</span>
+    <span class="pill" style="color:var(--d3);border-color:rgba(139,92,246,.4)">Capstone</span>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1</p>
+  <h2 class="slide-title">When to Use Multi-Agent</h2>
+  <div class="compare">
+    <div class="compare-col" style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);">
+      <div class="compare-head" style="background:rgba(16,185,129,.12);color:var(--green)">Reach for it when</div>
+      <div class="compare-body">
+        Task exceeds single context window<br/>
+        Subtasks are genuinely parallel<br/>
+        Different parts need different expertise<br/>
+        Need redundancy / consensus
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.25);">
+      <div class="compare-head" style="background:rgba(244,63,94,.12);color:var(--rose)">Do NOT reach for it when</div>
+      <div class="compare-body">
+        A single agent with good tools can handle it<br/>
+        You're still debugging the single-agent version<br/>
+        Coordination overhead &gt; the benefit
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--rose);margin-top:16px;">
+    <div class="callout-title" style="color:var(--rose)">Rule of thumb</div>
+    <p>Every agent you add is a new failure point. Start simple. Only reach for multi-agent when the single-agent ceiling genuinely limits you.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1</p>
+  <h2 class="slide-title">Six Topology Patterns</h2>
+  <div class="topo-grid">
+    <div class="topo-card" style="border-top:3px solid var(--d1)">
+      <div class="topo-name">Supervisor → Worker</div>
+      <div class="topo-use">Supervisor decomposes & dispatches to specialists in parallel.</div>
+      <div class="topo-pattern">Use when: parallel, independent subtasks</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--teal)">
+      <div class="topo-name">Router → Expert</div>
+      <div class="topo-use">Router classifies request, routes to the right specialist.</div>
+      <div class="topo-pattern">Use when: many request types, clear categories</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--amber)">
+      <div class="topo-name">Orchestrator</div>
+      <div class="topo-use">Dynamically decides which agent to call next based on intermediate results.</div>
+      <div class="topo-pattern">Use when: dynamic, adaptive workflows</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--purple)">
+      <div class="topo-name">Round Table</div>
+      <div class="topo-use">All agents see the same task; moderator synthesises consensus.</div>
+      <div class="topo-pattern">Use when: diverse perspectives needed</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--cyan)">
+      <div class="topo-name">Tree of Agents</div>
+      <div class="topo-use">Recursive decomposition; results propagate back up the tree.</div>
+      <div class="topo-pattern">Use when: massive tasks, recursive structure</div>
+    </div>
+    <div class="topo-card" style="border-top:3px solid var(--green)">
+      <div class="topo-name">Pipeline</div>
+      <div class="topo-use">Linear stages: each agent's output is the next agent's input.</div>
+      <div class="topo-pattern">Use when: ordered stages, deterministic flow</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #1</p>
+  <h2 class="slide-title"><span style="color:var(--d1);">Supervisor → Worker</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Fan-out, Fan-in</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                ┌────────────────────┐
+                │     SUPERVISOR     │   decompose task,
+                │   plans · dispatch │   pick N workers
+                └──┬──────┬──────┬───┘
+          ┌────────┘      │      └────────┐
+          ▼               ▼               ▼
+     ┌─────────┐     ┌─────────┐     ┌─────────┐
+     │ WORKER  │     │ WORKER  │     │ WORKER  │   parallel,
+     │    A    │     │    B    │     │    C    │   isolated,
+     └────┬────┘     └────┬────┘     └────┬────┘   no shared state
+          └───────────────┼───────────────┘
+                          ▼
+                ┌────────────────────┐
+                │     AGGREGATOR     │   merge results →
+                │  rules · LLM judge │   single answer
+                └────────────────────┘</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Genuinely parallel</div>
+      <p>Subtasks are independent and embarrassingly parallel — multi-source research, fan-out review by domain (legal · finance · eng), batch document processing where order doesn't matter.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Step-wise dependencies</div>
+      <p>Worker B needs Worker A's output. The task is a chain, not a star. A single ReAct agent already converges on the answer — adding workers only multiplies cost.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">N× cost · merge fragility</div>
+      <p>Every worker re-sends its system prompt. One slow worker stalls the supervisor. One bad worker poisons the merged answer. Partial failures need a story.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Bound · contract · time-box</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">asyncio.Semaphore(N)</code> caps concurrency. Force structured outputs (Pydantic) so the aggregator can't be tricked. Per-worker timeout + retry. Make the supervisor plain code wherever the plan is known.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #2</p>
+  <h2 class="slide-title"><span style="color:var(--teal);">Router → Expert</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— One Door, Many Rooms</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                       ┌────────────────────┐
+   user query ───────▶ │      ROUTER        │   cheap classifier:
+                       │  Haiku · regex ·   │   pick exactly ONE
+                       │  embedding KNN     │   expert (or fallback)
+                       └──┬─────┬─────┬─────┘
+                          │     │     │
+                  billing │     │     │ refunds
+                          │ tech│     │
+                ┌─────────┘     │     └────────┐
+                ▼               ▼               ▼
+           ┌─────────┐     ┌─────────┐     ┌──────────┐
+           │ EXPERT  │     │ EXPERT  │     │ FALLBACK │
+           │ Billing │     │  Tech   │     │  human / │
+           │         │     │ Support │     │  default │
+           └─────────┘     └─────────┘     └──────────┘
+                only the chosen expert pays the LLM cost</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Disjoint, well-known categories</div>
+      <p>Customer support triage. Multi-skill assistant (code · math · sql). Cost-sensitive paths where you want only the right specialist to load and pay.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Fuzzy or overlapping intents</div>
+      <p>The query spans two domains. Categories drift weekly. You need an ensembled answer, not a single verdict. Routing accuracy &lt; 80% — the system is now strictly worse than one strong agent.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Mis-routes are silent</div>
+      <p>A wrong route returns a confident wrong answer — no error, just bad UX. Categories rot as the product evolves. New intent types have nowhere to go and quietly fail.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Make routing a first-class signal</div>
+      <p>Log <code style="font-family:var(--ff-mono);font-size:.78em;">{intent, confidence}</code> to Langfuse on every call. Always have a default-fallback expert. Treat each mis-route as an eval case. Confidence &lt; threshold → escalate to a stronger router or hand off to human.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #3</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">Orchestrator</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— The Plan Is the Output</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">             ┌──────────────────────┐
+      task ──▶ │    ORCHESTRATOR      │ ◄── reads each result,
+             │  LLM planner / policy  │     picks next step
+             └───────────┬────────────┘
+                         │
+                  ┌──────▼───────┐
+                  │ call Agent A │   step 1 (always)
+                  └──────┬───────┘
+                         │ result + confidence
+              ┌──────────▼───────────┐
+              │   branching logic    │   conf < 0.7  → call Agent B
+              │  (typed next-action) │   needs data  → call Agent C
+              └──┬─────────┬─────────┘   done         → answer
+                 ▼         ▼
+            Agent B    Agent C   ─── results loop back ▲</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Adaptive, long-horizon work</div>
+      <p>The next step truly depends on the current finding — incident triage, deep research, dynamic data pipelines. The plan can't be drawn on a whiteboard ahead of time.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">You already know the steps</div>
+      <p>A fixed extract-then-summarise flow. Latency-critical chat. A simple ReAct or pipeline already converges. Adding an orchestrator just adds non-determinism and tokens.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Non-determinism · loops · drift</div>
+      <p>Same input, different paths, different cost. Easy to thrash between two agents. Hard to reproduce a production bug. Context bloats turn-over-turn until quality collapses.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Budgets · enums · replay</div>
+      <p>Hard step budget (e.g. 12 turns). Make <code style="font-family:var(--ff-mono);font-size:.78em;">next_action</code> a typed enum, not free text. Persist every decision as a Langfuse trace. Replay traces in CI as eval cases — your bugs become regressions.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #4</p>
+  <h2 class="slide-title"><span style="color:var(--purple);">Round Table</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Many Voices, One Verdict</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                         TASK / QUESTION
+                                │
+              ┌─────────────────┴─────────────────┐
+              ▼                                   ▼
+         ┌─────────┐    shared scratchpad    ┌─────────┐
+         │ AGENT A │ ◄────── chat  ───────▶  │ AGENT B │
+         │   PM    │                         │   Sec   │
+         └────┬────┘                         └────┬────┘
+              │           ┌─────────┐             │
+              └────────▶  │ AGENT C │  ◄──────────┘
+                          │  Arch   │
+                          └────┬────┘
+                               ▼
+                       ┌────────────────┐
+                       │   MODERATOR    │   rubric scoring,
+                       │   synthesise   │   not popularity vote
+                       └────────────────┘</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Diverse perspectives matter</div>
+      <p>Architecture / design review (PM · security · architect). Critique-and-revise loops. Adversarial / red-team setups where one agent attacks and another defends.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Single domain · tight latency</div>
+      <p>Cost-sensitive paths. The question has one right answer. Real-time chat (round-tables are slow). The agents will sycophantically agree on turn one anyway.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Cost explodes · groupthink</div>
+      <p>N agents × M turns × full transcript = O(N·M²) tokens. LLMs lean toward agreement — diversity collapses fast. Genuine conflict has no judge unless you build one.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Force diversity · cap rounds</div>
+      <p>Distinct system prompts and explicit roles. Mix models / temperatures / seeds so agents start in different places. Hard cap turns (3–5). The moderator scores against a written rubric — never "majority wins".</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #5</p>
+  <h2 class="slide-title"><span style="color:var(--cyan);">Tree of Agents</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Recursive Decomposition</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:780px;font-size:.74rem;">                       ┌──────┐
+                       │ ROOT │   decompose huge task
+                       └──┬───┘
+                  ┌───────┴────────┐
+                  ▼                ▼
+              ┌──────┐         ┌──────┐
+              │ NODE │         │ NODE │   sub-decompose,
+              └──┬───┘         └──┬───┘   pick subtree size
+              ┌──┴──┐           ┌─┴──┐
+              ▼     ▼           ▼    ▼
+           ┌────┐┌────┐      ┌────┐┌────┐
+           │LEAF││LEAF│      │LEAF││LEAF│   leaves do real
+           └─┬──┘└─┬──┘      └─┬──┘└─┬──┘   LLM work
+             └────┴──────┬─────┴─────┘
+                         ▲
+                  results bubble up,
+                  merged at every node</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Massive · recursively splittable</div>
+      <p>Whole-codebase review. Multi-document research over a corpus. Hierarchical tasks where summary-of-summaries makes sense (book summarisation, audit reports).</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">Flat or unbounded tasks</div>
+      <p>The task doesn't shrink as you split it. Depth has no natural floor. Latency budget is tight — trees serialise on the longest branch and are slow by design.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Exponential cost · lossy merge</div>
+      <p><code style="font-family:var(--ff-mono);font-size:.78em;">branch ^ depth</code> LLM calls in the worst case. Each merge step loses detail; one weak leaf taints its parent and silently propagates upward.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Bound depth · monoid merge</div>
+      <p>Hard <code style="font-family:var(--ff-mono);font-size:.78em;">max_depth</code> and <code style="font-family:var(--ff-mono);font-size:.78em;">max_branch</code>. Inner nodes are deterministic merge code, only leaves call the LLM. Define a <em>monoid</em> merge fn (associative + identity). Early-terminate when confidence saturates.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Topology #6</p>
+  <h2 class="slide-title"><span style="color:var(--green);">Pipeline</span> <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— Assembly Line for Agents</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:820px;font-size:.74rem;">           ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+  input ──▶ │ STAGE 1 │ ─▶ │ STAGE 2 │ ─▶ │ STAGE 3 │ ─▶ │ STAGE 4 │ ──▶ output
+           │ extract │    │classify │    │ enrich  │    │  write  │
+           └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘
+                │              │              │              │
+                ▼              ▼              ▼              ▼
+            ckpt 1         ckpt 2         ckpt 3         ckpt 4    ─▶ retry from
+                                                                       any stage
+        ─── typed Pydantic contract enforced at every boundary ───</div>
+  <div class="grid-2" style="max-width:860px;gap:10px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">USE WHEN</div>
+      <div class="card-title" style="color:var(--green)">Ordered, deterministic stages</div>
+      <p>Document → extract → classify → enrich → write. ETL with LLM steps inside. Compliance / batch jobs where reproducibility is non-negotiable. The flowchart was easy to draw.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-num">AVOID WHEN</div>
+      <div class="card-title" style="color:var(--rose)">You need branching or feedback</div>
+      <p>Stage 4 has to call back into Stage 2. The path varies per input. Real-time conversational use. Pipelines hate cycles — bend one in and you've reinvented an Orchestrator, badly.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">COMPLEXITY</div>
+      <div class="card-title" style="color:var(--amber)">Errors propagate · schemas drift</div>
+      <p>Stage 2's output shape changes and silently breaks Stage 3. One stage's failure rolls everything back. No retry from the middle without infra. Garbage in, garbage all the way out.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MANAGE IT</div>
+      <div class="card-title d3">Typed contracts · checkpoints · DLQ</div>
+      <p>Pydantic model at every stage boundary. Each stage is idempotent and stateless. Persist intermediate results so you can retry from stage <em>N</em>. Dead-letter queue for poison rows — pipeline never blocks on one bad input.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.1 · Wrap-up</p>
+  <h2 class="slide-title">Choosing a Topology <span style="color:var(--text3);font-size:.55em;font-family:var(--ff-body);font-style:italic;">— a 30-second decision tree</span></h2>
+  <div class="diagram" style="margin-bottom:14px;max-width:820px;font-size:.74rem;">  Can a single ReAct agent do it well?    ──▶ YES ──▶  STOP. Do not fan out.
+                  │ NO
+                  ▼
+  Are subtasks independent and parallel?   ──▶ YES ──▶  Supervisor → Worker
+                  │ NO
+                  ▼
+  Are categories disjoint and well-known?  ──▶ YES ──▶  Router → Expert
+                  │ NO
+                  ▼
+  Is the order fixed and deterministic?    ──▶ YES ──▶  Pipeline
+                  │ NO
+                  ▼
+  Does the task split recursively?         ──▶ YES ──▶  Tree of Agents
+                  │ NO
+                  ▼
+  Do you need diverse perspectives?        ──▶ YES ──▶  Round Table
+                  │ NO
+                  ▼
+  Plan emerges from intermediate results   ──▶ YES ──▶  Orchestrator
+                                                       (last resort — most expensive)</div>
+  <div class="callout border-d3" style="max-width:780px;">
+    <div class="callout-title d3">Universal complexity rules</div>
+    <p>Every topology pays the same three taxes — <strong style="color:var(--white)">cost amplification</strong>, <strong style="color:var(--white)">non-determinism</strong>, and <strong style="color:var(--white)">debug surface area</strong>. Manage them with the same three tools: <em>typed contracts</em> at every agent boundary, <em>hard budgets</em> on turns and tokens, and <em>full Langfuse traces</em> replayed as eval cases. Skip any one of these and the topology will quietly outrun your ability to reason about it.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2</p>
+  <h2 class="slide-title">A2A Protocol <span style="color:var(--text3);font-size:.6em;font-family:var(--ff-body);">Google, 2025</span></h2>
+  <div class="diagram" style="margin-bottom:14px;">Client Agent                    Remote Agent
+─────────────                   ────────────
+GET /.well-known/agent.json →   Agent Card (name, skills, endpoint)
+POST /tasks             →       Task accepted (returns task_id)
+GET /tasks/{id}/stream  →       SSE: working → completed + result</div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card">
+      <div class="card-title">Agent Card</div>
+      <p>JSON manifest: name, version, skills, capabilities. Enables discovery. Any A2A client can use any A2A server without custom code.</p>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--d3)">ACP (IBM)</div>
+      <p>Async message bus (Redis Streams/pub-sub). Better for long-running pipelines with many agents. A2A = request/response; ACP = event-driven.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2A Deep Dive</p>
+  <h2 class="slide-title"><span style="color:var(--cyan);">A2A Protocol</span> — What &amp; Why</h2>
+  <div class="callout border-d3" style="margin-bottom:14px;">
+    <div class="callout-title d3">The pitch in one line</div>
+    <p>An open standard that lets agents built with <em>different frameworks</em>, by <em>different vendors</em>, talk to each other over plain HTTP — without exposing their internals.</p>
+  </div>
+  <div class="grid-3" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">ORIGIN</div>
+      <div class="card-title" style="color:var(--cyan)">Open · Linux Foundation</div>
+      <p>Started by Google, donated to the Linux Foundation in 2025. Apache 2.0. Reached <strong style="color:var(--white)">v1.0</strong> with SDKs in Python, JS, Java, .NET and Go.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">SCOPE</div>
+      <div class="card-title" style="color:var(--green)">Agent ↔ Agent</div>
+      <p>Discovery + task delegation + result streaming. <strong style="color:var(--white)">Black-box</strong> by design — agents do not share memory, tools, or proprietary logic.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">FITS WITH</div>
+      <div class="card-title" style="color:var(--purple)">MCP &amp; ACP</div>
+      <p><strong style="color:var(--white)">MCP</strong> = agent ↔ tool. <strong style="color:var(--white)">A2A</strong> = agent ↔ agent. <strong style="color:var(--white)">ACP</strong> has merged into A2A under one Linux Foundation governance.</p>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--cyan);margin-top:14px;background:rgba(34,211,238,.05);">
+    <div class="callout-title" style="color:var(--cyan)">Wire format</div>
+    <p>HTTP(S) transport · JSON-RPC 2.0 payload · standard auth (OAuth / API keys in HTTP headers, <em>outside</em> the protocol). Modality-agnostic via typed <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">Part</code> objects.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2A Building Blocks</p>
+  <h2 class="slide-title">A2A — <em style="color:var(--cyan);font-style:italic;">Five Building Blocks</em></h2>
+  <div class="grid-3" style="max-width:820px;margin-bottom:12px;">
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="tag" style="background:rgba(34,211,238,.15);color:var(--cyan)">discovery</div>
+      <div class="card-title">Agent Card</div>
+      <p>JSON manifest fetched from a well-known URL (typically <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">/.well-known/agent-card.json</code>). Declares identity, endpoint, skills, capabilities and auth — the agent's "digital business card."</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">work</div>
+      <div class="card-title">Task</div>
+      <p>Stateful unit of work with a unique <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">id</code> and lifecycle: <strong style="color:var(--white)">submitted → working → input-required / completed / failed / canceled</strong>. Tracks long-running operations across turns.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="tag" style="background:rgba(16,185,129,.15);color:var(--green)">turn</div>
+      <div class="card-title">Message</div>
+      <p>One turn between client and agent — role <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">"user"</code> or <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">"agent"</code>, unique id, and one or more Parts. Carries instructions, status updates, or interim Q&amp;A.</p>
+    </div>
+  </div>
+  <div class="grid-2" style="max-width:560px;">
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">content</div>
+      <div class="card-title">Part</div>
+      <p>The atom inside Messages and Artifacts. Holds <strong style="color:var(--white)">one of</strong>: text · file URL or bytes · structured JSON. Each Part carries a <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">mediaType</code> (MIME) — that is how A2A stays modality-independent.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="tag" style="background:rgba(244,63,94,.15);color:var(--rose)">deliverable</div>
+      <div class="card-title">Artifact</div>
+      <p>The actual output of a task — a document, image, dataset, or report. Has its own id, name, and Parts. Streamed incrementally as the task progresses.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2A Lifecycle</p>
+  <h2 class="slide-title">A2A — <em style="color:var(--cyan);font-style:italic;">Life of a Task</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A2A protocol task lifecycle: discovery, task submission, three response patterns (polling, streaming, push), and final artifact delivery">
+      <defs>
+        <marker id="a2a-arr-r" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#22d3ee"/></marker>
+        <marker id="a2a-arr-l" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M8,0 L0,4.5 L8,9 Z" fill="#f59e0b"/></marker>
+        <marker id="a2a-arr-g" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M8,0 L0,4.5 L8,9 Z" fill="#10b981"/></marker>
+      </defs>
+
+      <rect x="60" y="20" width="200" height="36" rx="8" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="160" y="43" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Client Agent</text>
+
+      <rect x="500" y="20" width="200" height="36" rx="8" fill="rgba(245,158,11,.15)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="600" y="43" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">Remote Agent (A2A Server)</text>
+
+      <line x1="160" y1="56" x2="160" y2="295" stroke="#2a3a5c" stroke-dasharray="3 3" stroke-width="1"/>
+      <line x1="600" y1="56" x2="600" y2="295" stroke="#2a3a5c" stroke-dasharray="3 3" stroke-width="1"/>
+
+      <text x="20" y="80" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">1. DISCOVER</text>
+      <line x1="162" y1="84" x2="598" y2="84" stroke="#22d3ee" stroke-width="1.6" marker-end="url(#a2a-arr-r)"/>
+      <text x="380" y="78" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">GET /.well-known/agent-card.json</text>
+
+      <line x1="598" y1="104" x2="162" y2="104" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#a2a-arr-l)"/>
+      <text x="380" y="98" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">Agent Card { skills, endpoint, auth }</text>
+
+      <line x1="20" y1="120" x2="740" y2="120" stroke="#2a3a5c" stroke-dasharray="2 4"/>
+      <text x="20" y="138" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">2. SUBMIT</text>
+      <line x1="162" y1="142" x2="598" y2="142" stroke="#22d3ee" stroke-width="1.6" marker-end="url(#a2a-arr-r)"/>
+      <text x="380" y="136" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">message/send · message/stream { Message[Parts] }</text>
+
+      <line x1="598" y1="162" x2="162" y2="162" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#a2a-arr-l)"/>
+      <text x="380" y="156" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">Task { id, status: "submitted" }</text>
+
+      <line x1="20" y1="178" x2="740" y2="178" stroke="#2a3a5c" stroke-dasharray="2 4"/>
+      <text x="20" y="196" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">3. PROGRESS — pick one</text>
+
+      <rect x="180" y="200" width="135" height="60" rx="6" fill="rgba(59,130,246,.12)" stroke="#3b82f6" stroke-width="1"/>
+      <text x="247" y="216" text-anchor="middle" fill="#3b82f6" font-family="Outfit, sans-serif" font-size="11" font-weight="600">Polling</text>
+      <text x="247" y="232" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">tasks/get</text>
+      <text x="247" y="248" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">"check back later"</text>
+
+      <rect x="320" y="200" width="135" height="60" rx="6" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="387" y="216" text-anchor="middle" fill="#22d3ee" font-family="Outfit, sans-serif" font-size="11" font-weight="600">SSE Streaming</text>
+      <text x="387" y="232" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">tasks/resubscribe</text>
+      <text x="387" y="248" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">"watch live"</text>
+
+      <rect x="460" y="200" width="135" height="60" rx="6" fill="rgba(139,92,246,.12)" stroke="#8b5cf6" stroke-width="1"/>
+      <text x="527" y="216" text-anchor="middle" fill="#8b5cf6" font-family="Outfit, sans-serif" font-size="11" font-weight="600">Push (webhook)</text>
+      <text x="527" y="232" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="8">pushNotificationConfig</text>
+      <text x="527" y="248" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">"call me when done"</text>
+
+      <line x1="20" y1="276" x2="740" y2="276" stroke="#2a3a5c" stroke-dasharray="2 4"/>
+      <text x="20" y="294" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">4. DELIVER</text>
+      <line x1="598" y1="298" x2="162" y2="298" stroke="#10b981" stroke-width="1.8" marker-end="url(#a2a-arr-g)"/>
+      <text x="380" y="292" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10">Task { status: "completed", artifacts: [...] }</text>
+    </svg>
+  </div>
+  <div class="callout" style="border-color:var(--cyan);margin-top:12px;background:rgba(34,211,238,.05);">
+    <div class="callout-title" style="color:var(--cyan)">Three patterns, one wire</div>
+    <p>The same JSON-RPC endpoint handles short and long tasks. Pick the response pattern by expected runtime: <strong style="color:var(--white)">&lt; 1s</strong> = sync · <strong style="color:var(--white)">seconds</strong> = SSE streaming · <strong style="color:var(--white)">minutes / hours</strong> = push notifications via webhook.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2A Trade-offs</p>
+  <h2 class="slide-title">A2A — <em style="color:var(--cyan);font-style:italic;">When to Reach for It</em></h2>
+  <div class="grid-2" style="max-width:780px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Benefits</div>
+      <p>
+        <strong style="color:var(--white)">Cross-framework interop</strong> — LangGraph + ADK + CrewAI + Semantic Kernel + custom all speak the same wire format<br/><br/>
+        <strong style="color:var(--white)">Black-box safety</strong> — share capabilities, not internals. IP, tools and credentials stay home<br/><br/>
+        <strong style="color:var(--white)">Long-running by design</strong> — push notifications survive client disconnects and scale-to-zero<br/><br/>
+        <strong style="color:var(--white)">Standard auth</strong> — OAuth / API keys in HTTP headers, declared up front in the Agent Card
+      </p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Pitfalls</div>
+      <p>
+        <strong style="color:var(--white)">Network tax</strong> — every agent hop adds serialisation + RTT. Do not use inside one process<br/><br/>
+        <strong style="color:var(--white)">Operational surface</strong> — task store, streaming infra, webhook delivery, auth — all yours to run<br/><br/>
+        <strong style="color:var(--white)">Young ecosystem</strong> — v1.0 just landed; registries, governance and tooling are still maturing<br/><br/>
+        <strong style="color:var(--white)">Eval blind-spot</strong> — black-box agents are harder to debug; instrument both sides with traces
+      </p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="background:rgba(139,92,246,.05);">
+    <div class="callout-title d3">Pick A2A when…</div>
+    <p>You need a <strong style="color:var(--white)">multi-vendor</strong> or <strong style="color:var(--white)">cross-team</strong> agent to delegate work to another agent you don't own — or when an agent must run for minutes/hours and survive client disconnects. <strong style="color:var(--white)">Skip it</strong> for tightly-coupled steps inside one workflow (use direct LangGraph calls) and for tool invocation (that is MCP's job).</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · ACP Deep Dive</p>
+  <h2 class="slide-title"><span style="color:var(--teal);">ACP</span> — Agent Communication Protocol</h2>
+  <div class="callout" style="border-color:var(--amber);margin-bottom:14px;background:rgba(245,158,11,.06);">
+    <div class="callout-title" style="color:var(--amber)">Important context</div>
+    <p>ACP is now <strong style="color:var(--white)">part of A2A</strong> under the Linux Foundation. The IBM / BeeAI team merged it in 2025 — a migration guide ships with both projects. New work usually targets A2A, but the ACP design ideas live on.</p>
+  </div>
+  <div class="grid-3" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-num">PHILOSOPHY</div>
+      <div class="card-title" style="color:var(--teal)">REST-first · No SDK needed</div>
+      <p>Plain HTTP. Hit it from <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">curl</code>, Postman, the browser. Python and TypeScript SDKs are optional, not required.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">CONTENT</div>
+      <div class="card-title" style="color:var(--cyan)">MIME-typed messages</div>
+      <p>Any modality works out of the box — text, image, audio, video, custom binary. The protocol never had to be revised for a new content type.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">RUNTIME</div>
+      <div class="card-title" style="color:var(--purple)">Async-first, sync supported</div>
+      <p>Built for long-running agent tasks. Stateful or stateless. Online <em>and</em> offline discovery — agents can register via metadata embedded in their distribution package.</p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="margin-top:12px;">
+    <div class="callout-title d3">Reference implementation</div>
+    <p>The <strong style="color:var(--white)">BeeAI platform</strong> — built on ACP — lets you test, deploy and share ACP agents. Apache 2.0, Linux Foundation governance.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · ACP Deployments</p>
+  <h2 class="slide-title">ACP — <em style="color:var(--teal);font-style:italic;">Four Topologies on One Protocol</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four ACP deployment patterns: single agent, multi-agent single server, distributed multi-server, and router orchestration">
+      <defs>
+        <marker id="acp-arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#94a3b8"/></marker>
+        <marker id="acp-arr-c" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#22d3ee"/></marker>
+        <marker id="acp-arr-y" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#f59e0b"/></marker>
+      </defs>
+
+      <text x="100" y="22" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">1. SINGLE</text>
+      <rect x="20" y="36" width="50" height="34" rx="6" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="45" y="56" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Client</text>
+      <line x1="70" y1="53" x2="125" y2="53" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#acp-arr)"/>
+      <text x="97" y="48" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="7">REST</text>
+      <rect x="125" y="30" width="60" height="46" rx="6" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="1"/>
+      <rect x="135" y="40" width="40" height="22" rx="4" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="0.8"/>
+      <text x="155" y="55" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Agent</text>
+      <text x="155" y="72" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="7">server</text>
+      <text x="100" y="92" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">PoCs · single specialist</text>
+
+      <text x="290" y="22" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">2. MULTI / 1 SERVER</text>
+      <rect x="210" y="36" width="50" height="34" rx="6" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="235" y="56" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Client</text>
+      <line x1="260" y1="53" x2="310" y2="53" stroke="#94a3b8" stroke-width="1.4" marker-end="url(#acp-arr)"/>
+      <rect x="310" y="22" width="80" height="64" rx="6" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="1"/>
+      <rect x="318" y="30" width="64" height="14" rx="3" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="0.7"/>
+      <text x="350" y="40" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="8">Agent A</text>
+      <rect x="318" y="48" width="64" height="14" rx="3" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="0.7"/>
+      <text x="350" y="58" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="8">Agent B</text>
+      <rect x="318" y="66" width="64" height="14" rx="3" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="0.7"/>
+      <text x="350" y="76" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="8">Agent C</text>
+      <text x="295" y="105" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">co-located · shared infra</text>
+
+      <text x="510" y="22" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">3. DISTRIBUTED</text>
+      <rect x="420" y="42" width="50" height="34" rx="6" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="445" y="62" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Client</text>
+      <line x1="470" y1="46" x2="530" y2="32" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+      <line x1="470" y1="59" x2="530" y2="60" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+      <line x1="470" y1="72" x2="530" y2="88" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+      <rect x="530" y="22" width="70" height="20" rx="4" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="565" y="36" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Server 1</text>
+      <rect x="530" y="50" width="70" height="20" rx="4" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="565" y="64" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Server 2</text>
+      <rect x="530" y="78" width="70" height="20" rx="4" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="565" y="92" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Server 3</text>
+      <text x="510" y="115" text-anchor="middle" fill="#64748b" font-family="Outfit, sans-serif" font-size="9" font-style="italic">scale &amp; deploy independently</text>
+
+      <line x1="20" y1="140" x2="740" y2="140" stroke="#2a3a5c" stroke-dasharray="2 4"/>
+      <text x="380" y="160" text-anchor="middle" fill="#8b5cf6" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">4. ROUTER ORCHESTRATION  ·  one ACP server is also an ACP client</text>
+
+      <rect x="60" y="186" width="60" height="34" rx="6" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="90" y="206" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="9">Client</text>
+      <line x1="120" y1="203" x2="195" y2="203" stroke="#22d3ee" stroke-width="1.4" marker-end="url(#acp-arr-c)"/>
+      <text x="157" y="198" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="7">REST</text>
+
+      <rect x="195" y="178" width="120" height="50" rx="8" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="255" y="200" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="600">Router Agent</text>
+      <text x="255" y="216" text-anchor="middle" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="8">decompose · route · merge</text>
+
+      <line x1="315" y1="190" x2="430" y2="178" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+      <line x1="315" y1="203" x2="430" y2="203" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+      <line x1="315" y1="216" x2="430" y2="228" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#acp-arr)"/>
+
+      <rect x="430" y="164" width="100" height="26" rx="5" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="480" y="181" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Specialist A</text>
+      <rect x="430" y="192" width="100" height="26" rx="5" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="480" y="209" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Specialist B</text>
+      <rect x="430" y="220" width="100" height="26" rx="5" fill="rgba(20,184,166,.12)" stroke="#14b8a6" stroke-width="0.9"/>
+      <text x="480" y="237" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Specialist C</text>
+
+      <line x1="535" y1="177" x2="600" y2="177" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#acp-arr-y)"/>
+      <line x1="535" y1="205" x2="600" y2="205" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#acp-arr-y)"/>
+      <line x1="535" y1="233" x2="600" y2="233" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#acp-arr-y)"/>
+      <text x="567" y="172" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="7">MCP</text>
+
+      <rect x="600" y="164" width="80" height="26" rx="5" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="0.9"/>
+      <text x="640" y="181" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Tools A</text>
+      <rect x="600" y="192" width="80" height="26" rx="5" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="0.9"/>
+      <text x="640" y="209" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Tools B</text>
+      <rect x="600" y="220" width="80" height="26" rx="5" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="0.9"/>
+      <text x="640" y="237" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Tools C</text>
+
+      <text x="380" y="268" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="10" font-style="italic">same protocol scales from a one-agent prototype to a tree of specialists, each with their own MCP toolboxes</text>
+    </svg>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · ACP Trade-offs</p>
+  <h2 class="slide-title">ACP — <em style="color:var(--teal);font-style:italic;">Benefits, Pitfalls &amp; the Migration Question</em></h2>
+  <div class="grid-2" style="max-width:780px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Benefits</div>
+      <p>
+        <strong style="color:var(--white)">Lowest barrier to entry</strong> — pure REST. Hit it from <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">curl</code> in 10 lines<br/><br/>
+        <strong style="color:var(--white)">Modality-free</strong> — MIME types mean no protocol changes for new content<br/><br/>
+        <strong style="color:var(--white)">Offline discovery</strong> — agents register themselves via packaged metadata; works in air-gapped or scale-to-zero deployments<br/><br/>
+        <strong style="color:var(--white)">Stateless or stateful</strong> — your call per agent
+      </p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Pitfalls</div>
+      <p>
+        <strong style="color:var(--white)">Consolidating into A2A</strong> — governance, naming and SDKs are aligning. Greenfield work should default to A2A<br/><br/>
+        <strong style="color:var(--white)">Smaller registry</strong> than A2A — fewer published agents to wire up<br/><br/>
+        <strong style="color:var(--white)">Long pipelines</strong> can feel awkward in plain REST — lean on webhooks / streaming<br/><br/>
+        <strong style="color:var(--white)">No JSON-RPC envelope</strong> — that is a feature for some, friction for others
+      </p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="background:rgba(139,92,246,.05);">
+    <div class="callout-title d3">Pick ACP when…</div>
+    <p>You are already on the <strong style="color:var(--white)">BeeAI platform</strong> or your team values a <em>"works with curl"</em> ergonomic. <strong style="color:var(--white)">For new projects</strong>, start with A2A and read the published ACP → A2A migration guide so you can adopt ACP-style ergonomics where they help. Treat ACP as a design lineage now, not a competing standard.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2UI Deep Dive</p>
+  <h2 class="slide-title"><span style="color:var(--amber);">A2UI</span> — Agent-Driven Interfaces</h2>
+  <div class="callout" style="border-color:var(--amber);margin-bottom:14px;background:rgba(245,158,11,.05);">
+    <div class="callout-title" style="color:var(--amber)">The problem it solves</div>
+    <p>How can an AI agent <strong style="color:var(--white)">safely send a rich UI</strong> across a trust boundary — without dumping JSON the user can't read, and without executing arbitrary code on the client?</p>
+  </div>
+  <div class="grid-2" style="max-width:780px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">The old answers</div>
+      <p>Either <strong style="color:var(--white)">text-only chat</strong> (poor UX for forms, charts and maps) or <strong style="color:var(--white)">execute generated code</strong> on the client (an OWASP nightmare — UI injection, XSS, unbounded scripts).</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title" style="color:var(--amber)">The A2UI answer</div>
+      <p>Agent emits a <strong style="color:var(--white)">declarative description</strong> of components from a <strong style="color:var(--white)">pre-approved catalog</strong>. The client renders with its own native, styled widgets — no <code style="font-family:var(--ff-mono);font-size:.78em;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;">eval</code>, no surprises.</p>
+    </div>
+  </div>
+  <div class="grid-3" style="max-width:820px;margin-top:14px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">SECURITY</div>
+      <div class="card-title">Catalog allow-list</div>
+      <p>Agents may only reference components you've approved. No dynamic code, no XSS surface.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">PORTABILITY</div>
+      <div class="card-title">Render anywhere</div>
+      <p>One agent response → Angular, Flutter, React, Lit, or pure Markdown. Style and theme stay client-side.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-num">UX</div>
+      <div class="card-title">Streams as it builds</div>
+      <p>Flat JSON — LLMs don't need to emit perfect trees in one shot. Users watch the UI assemble live.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2UI Data Flow</p>
+  <h2 class="slide-title">A2UI — <em style="color:var(--amber);font-style:italic;">From Agent to Pixel</em></h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A2UI data flow: user prompts agent, agent streams declarative messages over A2A or SSE, client looks up components in its catalog and renders native widgets, user actions return to agent">
+      <defs>
+        <marker id="ui-arr-r" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#f59e0b"/></marker>
+        <marker id="ui-arr-l" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M8,0 L0,4.5 L8,9 Z" fill="#22d3ee"/></marker>
+      </defs>
+
+      <rect x="6" y="6" width="748" height="268" rx="10" fill="none" stroke="#2a3a5c" stroke-dasharray="4 4"/>
+
+      <text x="20" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">CLIENT</text>
+      <rect x="20" y="40" width="120" height="40" rx="8" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1.4"/>
+      <text x="80" y="64" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11" font-weight="600">User</text>
+
+      <rect x="20" y="100" width="280" height="160" rx="10" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="32" y="118" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">RENDERER</text>
+      <text x="32" y="132" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9">Angular · Flutter · React · Lit · Markdown</text>
+
+      <rect x="32" y="142" width="256" height="36" rx="6" fill="#0f1524" stroke="#2a3a5c" stroke-width="1"/>
+      <text x="42" y="156" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">📦 CATALOG (allow-list)</text>
+      <text x="42" y="170" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="9">Form · Table · Chart · Map · Card · Button</text>
+
+      <rect x="32" y="186" width="256" height="64" rx="6" fill="rgba(245,158,11,.08)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2"/>
+      <text x="42" y="202" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">RENDERED UI (live)</text>
+      <rect x="42" y="210" width="100" height="14" rx="2" fill="rgba(255,255,255,.05)"/>
+      <text x="92" y="221" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="9">Form: name, email</text>
+      <rect x="42" y="228" width="236" height="14" rx="2" fill="rgba(255,255,255,.05)"/>
+      <text x="160" y="239" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="9">Chart: weekly active users</text>
+
+      <text x="500" y="28" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2" font-weight="700">AGENT</text>
+
+      <rect x="460" y="100" width="280" height="160" rx="10" fill="rgba(245,158,11,.07)" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="472" y="118" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.5" font-weight="700">A2UI MESSAGE STREAM (v0.9)</text>
+      <text x="472" y="138" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10">createSurface</text>
+      <text x="730" y="138" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">+ catalog id</text>
+      <text x="472" y="158" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10">updateComponents</text>
+      <text x="730" y="158" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">add / patch UI</text>
+      <text x="472" y="178" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10">updateDataModel</text>
+      <text x="730" y="178" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">state + bindings</text>
+      <text x="472" y="198" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10">deleteSurface</text>
+      <text x="730" y="198" text-anchor="end" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9">tear down</text>
+
+      <rect x="472" y="216" width="256" height="36" rx="6" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width="0.8" stroke-dasharray="3 2"/>
+      <text x="600" y="230" text-anchor="middle" fill="#22d3ee" font-family="Outfit, sans-serif" font-size="9" font-weight="600">Three pillars</text>
+      <text x="600" y="244" text-anchor="middle" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9">streaming · declarative · data-binding</text>
+
+      <line x1="300" y1="170" x2="458" y2="170" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#ui-arr-r)"/>
+      <text x="379" y="162" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">A2UI / SSE / WebSocket / MCP</text>
+
+      <line x1="458" y1="200" x2="300" y2="200" stroke="#22d3ee" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ui-arr-l)"/>
+      <text x="379" y="216" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700">user actions (events + bindings)</text>
+
+      <line x1="80" y1="80" x2="80" y2="100" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 3"/>
+    </svg>
+  </div>
+  <div class="callout" style="border-color:var(--amber);margin-top:12px;background:rgba(245,158,11,.05);">
+    <div class="callout-title" style="color:var(--amber)">Adjacency-list, not a tree</div>
+    <p>Components are emitted as a <strong style="color:var(--white)">flat list</strong> with parent ids — LLMs do not have to nest perfect JSON. State lives in a separate data model; <strong style="color:var(--white)">JSON Pointer</strong> bindings keep structure and state independent so updates stay reactive.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · A2UI Trade-offs</p>
+  <h2 class="slide-title">A2UI — <em style="color:var(--amber);font-style:italic;">When Pixels Matter</em></h2>
+  <div class="grid-2" style="max-width:780px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Benefits</div>
+      <p>
+        <strong style="color:var(--white)">No code execution risk</strong> — declarative data, pre-approved catalog<br/><br/>
+        <strong style="color:var(--white)">One agent, many surfaces</strong> — same response renders on web, mobile, desktop<br/><br/>
+        <strong style="color:var(--white)">Native look &amp; feel</strong> — clients keep their own theme, accessibility and i18n<br/><br/>
+        <strong style="color:var(--white)">Streaming UX</strong> — UI builds incrementally; users see progress, not a spinner
+      </p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Pitfalls</div>
+      <p>
+        <strong style="color:var(--white)">Catalog discipline required</strong> — you must design, version and ship a component library<br/><br/>
+        <strong style="color:var(--white)">LLM mis-binding risk</strong> — wrong component picked or fields swapped → eval the UI, not just the text<br/><br/>
+        <strong style="color:var(--white)">Spec is young</strong> — v0.8 stable, v0.9 draft. Expect breaking changes between versions<br/><br/>
+        <strong style="color:var(--white)">Less freeform creativity</strong> — agents cannot invent UI outside the catalog
+      </p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="background:rgba(139,92,246,.05);">
+    <div class="callout-title d3">Pick A2UI when…</div>
+    <p>Your agent needs to show <strong style="color:var(--white)">forms, tables, charts, maps or interactive widgets</strong> instead of just text — and especially when the same agent must serve <strong style="color:var(--white)">multiple platforms</strong>. <strong style="color:var(--white)">Skip it</strong> for pure-text chatbots and one-off bespoke UIs that do not fit a reusable catalog.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Putting It Together</p>
+  <h2 class="slide-title"><em style="color:var(--cyan);font-style:italic;">MCP · A2A · A2UI</em> — One Agent, Three Wires</h2>
+  <div class="agent-arch">
+    <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The agent interop stack: A2UI on top connecting agent to user, A2A horizontally connecting agent to peer agents, MCP downward connecting agent to tools and resources">
+      <defs>
+        <marker id="stk-arr-y" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#f59e0b"/></marker>
+        <marker id="stk-arr-c" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#22d3ee"/></marker>
+        <marker id="stk-arr-t" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#14b8a6"/></marker>
+      </defs>
+
+      <rect x="320" y="14" width="120" height="34" rx="8" fill="rgba(34,211,238,.15)" stroke="#22d3ee" stroke-width="1.4"/>
+      <text x="380" y="36" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="12" font-weight="600">User / Client</text>
+
+      <line x1="380" y1="48" x2="380" y2="78" stroke="#f59e0b" stroke-width="2" marker-end="url(#stk-arr-y)"/>
+      <rect x="430" y="55" width="60" height="18" rx="4" fill="rgba(245,158,11,.18)" stroke="#f59e0b" stroke-width="1"/>
+      <text x="460" y="68" text-anchor="middle" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">A2UI</text>
+      <text x="500" y="68" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9" font-style="italic">declarative UI</text>
+
+      <rect x="280" y="78" width="200" height="84" rx="10" fill="rgba(139,92,246,.18)" stroke="#8b5cf6" stroke-width="1.6"/>
+      <text x="380" y="106" text-anchor="middle" fill="#fff" font-family="DM Serif Display, serif" font-size="20" font-weight="700">Your Agent</text>
+      <text x="380" y="128" text-anchor="middle" fill="#cbd5e1" font-family="Outfit, sans-serif" font-size="10">LangGraph · ADK · CrewAI · custom</text>
+      <text x="380" y="146" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">PRAO loop · memory · model</text>
+
+      <line x1="280" y1="120" x2="180" y2="120" stroke="#22d3ee" stroke-width="2" marker-end="url(#stk-arr-c)"/>
+      <line x1="480" y1="120" x2="580" y2="120" stroke="#22d3ee" stroke-width="2" marker-end="url(#stk-arr-c)"/>
+      <rect x="195" y="108" width="56" height="22" rx="4" fill="rgba(34,211,238,.18)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="223" y="123" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">A2A</text>
+      <rect x="510" y="108" width="56" height="22" rx="4" fill="rgba(34,211,238,.18)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="538" y="123" text-anchor="middle" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">A2A</text>
+
+      <rect x="40" y="100" width="140" height="40" rx="8" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="110" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11">Peer Agent</text>
+      <text x="110" y="132" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">different team / vendor</text>
+
+      <rect x="580" y="100" width="140" height="40" rx="8" fill="rgba(34,211,238,.08)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="650" y="118" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="11">Peer Agent</text>
+      <text x="650" y="132" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="9">different framework</text>
+
+      <line x1="380" y1="162" x2="380" y2="190" stroke="#14b8a6" stroke-width="2" marker-end="url(#stk-arr-t)"/>
+      <rect x="430" y="167" width="60" height="18" rx="4" fill="rgba(20,184,166,.18)" stroke="#14b8a6" stroke-width="1"/>
+      <text x="460" y="180" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700">MCP</text>
+      <text x="500" y="180" fill="#94a3b8" font-family="Outfit, sans-serif" font-size="9" font-style="italic">tools · resources · prompts</text>
+
+      <rect x="180" y="194" width="120" height="32" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1"/>
+      <text x="240" y="214" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Filesystem MCP</text>
+      <rect x="320" y="194" width="120" height="32" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1"/>
+      <text x="380" y="214" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">GitHub MCP</text>
+      <rect x="460" y="194" width="120" height="32" rx="6" fill="rgba(245,158,11,.12)" stroke="#f59e0b" stroke-width="1"/>
+      <text x="520" y="214" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="10">Postgres MCP</text>
+
+      <line x1="240" y1="194" x2="370" y2="170" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <line x1="380" y1="194" x2="380" y2="170" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <line x1="520" y1="194" x2="390" y2="170" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2 3"/>
+    </svg>
+  </div>
+  <div class="grid-3" style="max-width:820px;margin-top:14px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title" style="color:var(--amber)">A2UI — upward</div>
+      <p>Agent → User. Declarative UI for forms, charts, tables. Catalog-bound, safe to render on any client.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-title" style="color:var(--cyan)">A2A — sideways</div>
+      <p>Agent → Agent. Cross-team, cross-framework delegation. Black-box composition over HTTP + JSON-RPC.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-title" style="color:var(--teal)">MCP — downward</div>
+      <p>Agent → Tools. Standardised access to filesystems, APIs, databases, prompts and resources.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2</p>
+  <h2 class="slide-title">Agent Evaluation</h2>
+  <div class="grid-2" style="max-width:760px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-title">Tool Call Accuracy</div>
+      <p>Was the right tool called with the right arguments?<br/><br/>
+      Checks: correct tool selected · argument match · hallucinated tool names · unnecessary calls</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-title">Trajectory Evaluation</div>
+      <p>Was the <em>sequence</em> of tool calls efficient?<br/><br/>
+      Metrics: <strong style="color:var(--white)">efficiency ratio</strong> = reference_steps / actual_steps · loop count · backtrack count</p>
+    </div>
+  </div>
+  <div class="callout border-d3">
+    <div class="callout-title d3">Eval-driven development</div>
+    <p>Write eval cases <strong style="color:var(--white)">before</strong> implementing features. When a production bug occurs, immediately translate it into a new test case. Run evals in CI on every PR touching a prompt or tool.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas Toolkit</p>
+  <h2 class="slide-title"><em style="color:var(--cyan);font-style:italic;">Ragas</em> — Four Metric Families for Agents</h2>
+  <div class="callout border-d3" style="margin-bottom:14px;max-width:840px;background:rgba(139,92,246,.05);">
+    <div class="callout-title d3">Open-source · LLM-as-judge · Apache-2.0</div>
+    <p>Ragas ships <strong style="color:var(--white)">programmatic</strong> and <strong style="color:var(--white)">LLM-graded</strong> metrics that score a multi-turn conversation against expectations. All four consume the same <code style="font-family:var(--ff-mono);font-size:.78em;">user_input</code> message log — plug into pytest, CI, or pipe scores into Langfuse.</p>
+  </div>
+  <div class="grid-2" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">01 · PROGRAMMATIC</div>
+      <div class="card-title">Tool Call Accuracy</div>
+      <p>Did the agent call <strong style="color:var(--white)">the right tools</strong> with <strong style="color:var(--white)">the right args</strong> in <strong style="color:var(--white)">the right order</strong>? Deterministic, no judge LLM needed.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">02 · PROGRAMMATIC</div>
+      <div class="card-title">Tool Call F1</div>
+      <p>Soft cousin of accuracy. Returns <strong style="color:var(--white)">precision · recall · F1</strong> over the unordered set of tool calls. Survives extra or missing calls.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-num">03 · LLM-GRADED</div>
+      <div class="card-title">Agent Goal Accuracy</div>
+      <p>Did the agent <strong style="color:var(--white)">achieve the user's goal</strong>? Binary 1 / 0. Cares about outcome, not path. With- or without-reference modes.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-num">04 · LLM-GRADED</div>
+      <div class="card-title">Topic Adherence</div>
+      <p>Did every reply <strong style="color:var(--white)">stay on the allowed domain</strong>? Returns precision · recall · F1 against a list of <code style="font-family:var(--ff-mono);font-size:.78em;">reference_topics</code>.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Tool Call Accuracy — <em style="color:var(--cyan);font-style:italic;">Strict vs Flexible Order</em></h2>
+  <div class="grid-2" style="max-width:820px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">Strict order (default)</div>
+      <p>Sequence <strong style="color:var(--white)">must match exactly</strong>. Use for sequential workflows where order is causal — <em>search</em> before <em>filter</em>, <em>fetch</em> before <em>transform</em>.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Flexible order</div>
+      <p>Tools can fire <strong style="color:var(--white)">in any order</strong>. Use for parallel fan-out — fetching weather for many cities, hitting independent APIs in a map step.</p>
+    </div>
+  </div>
+  <div class="diagram" style="font-size:.7rem;max-width:840px;padding:14px 18px;">FORMULA   score = arg_accuracy × (sequence_aligned ? 1 : 0)
+
+EXAMPLES
+  PERFECT     Expected [search("py", limit=10, sort="date")]
+              Got      [search("py", limit=10, sort="date")]              → 1.00
+
+  PARTIAL     Expected [search("py", limit=10, sort="date")]
+              Got      [search("py", limit=10, sort="relevance")]         → 0.66    2/3 args match
+
+  WRONG       Expected [search(...), filter(...)]
+  ORDER       Got      [filter(...), search(...)]                         → 0.00    sequence broken (strict)
+              Same set evaluated in flexible mode                         → 1.00</div>
+  <div class="callout border-d3" style="margin-top:14px;max-width:840px;">
+    <div class="callout-title d3">Pitfall</div>
+    <p>Tool Call Accuracy is <strong style="color:var(--white)">unforgiving</strong> — one swapped step zeros the score. Pair it with Tool Call F1 during prompt iteration so a 0.0 still tells you <em>how close</em> you were.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Tool Call F1 — <em style="color:var(--cyan);font-style:italic;">Precision · Recall · Survives Drift</em></h2>
+  <div class="diagram" style="font-size:.74rem;max-width:780px;padding:16px 20px;margin-bottom:14px;">UNORDERED MATCHING — name + args must match; sequence ignored
+
+  TP   tool calls that match name AND args
+  FP   tool calls the agent made that were not expected
+  FN   expected tool calls the agent did not make
+
+  Precision = TP / (TP + FP)        Recall = TP / (TP + FN)
+
+           2 · Precision · Recall
+  F1  =  ─────────────────────────
+            Precision + Recall</div>
+  <div class="grid-3" style="max-width:840px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="tag" style="background:rgba(16,185,129,.15);color:var(--green)">Perfect</div>
+      <div class="card-title">F1 = 1.00</div>
+      <p>Ref&nbsp; [weather, uv]<br/>Got&nbsp; [weather, uv]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">TP=2 · FP=0 · FN=0</span></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">Extra call</div>
+      <div class="card-title">F1 = 0.67</div>
+      <p>Ref&nbsp; [weather, uv]<br/>Got&nbsp; [weather, uv, air_quality]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">TP=2 · FP=1 · FN=0</span></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="tag" style="background:rgba(244,63,94,.15);color:var(--rose)">Wrong arg</div>
+      <div class="card-title">F1 = 0.00</div>
+      <p>Ref&nbsp; [weather(Paris)]<br/>Got&nbsp; [weather(London)]<br/><span style="font-family:var(--ff-mono);font-size:.78em;color:var(--text3);">name OK, args break match</span></p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="margin-top:14px;max-width:780px;">
+    <div class="callout-title d3">When F1 beats Accuracy</div>
+    <p>During <strong style="color:var(--white)">prompt onboarding</strong> and <strong style="color:var(--white)">regression triage</strong>. F1 quantifies <em>how close</em> the agent got — Accuracy only tells you it failed. Track F1 trend across PRs, gate merges on Accuracy.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Agent Goal Accuracy — <em style="color:var(--cyan);font-style:italic;">Outcome over Path</em></h2>
+  <p style="color:var(--text2);max-width:780px;font-size:.95rem;margin-bottom:14px;text-align:center;">Binary <strong style="color:var(--white)">1 / 0</strong>. Asks one question — <strong style="color:var(--white)">did the user get what they came for?</strong> The agent can use any tool, in any order; only the end state is judged.</p>
+  <div class="grid-2" style="max-width:820px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="card-num">MODE 1</div>
+      <div class="card-title">With Reference</div>
+      <p>You provide a <code style="font-family:var(--ff-mono);font-size:.78em;">reference</code> string describing the ideal outcome. Judge LLM compares it against the conversation's end state.</p>
+      <p style="margin-top:8px;color:var(--text3);font-size:.76rem;font-style:italic;">e.g. "Table booked at one of the Chinese restaurants at 8pm"</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-num">MODE 2</div>
+      <div class="card-title">Without Reference</div>
+      <p>Judge LLM <strong style="color:var(--white)">infers the goal</strong> from the first user turn, then checks whether the conversation ended having achieved it.</p>
+      <p style="margin-top:8px;color:var(--text3);font-size:.76rem;font-style:italic;">No labels needed — ideal for production traces.</p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="max-width:820px;">
+    <div class="callout-title d3">Tool Call Accuracy vs Goal Accuracy</div>
+    <p><em>"Book me a flight to Paris."</em> — if you only care that the booking succeeded, use <strong style="color:var(--white)">Goal Accuracy</strong>. If you also care that the agent searched flights <em>before</em> booking (not the other way round), add <strong style="color:var(--white)">Tool Call Accuracy</strong>. They are complementary, not redundant.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · Ragas</p>
+  <h2 class="slide-title">Topic Adherence — <em style="color:var(--cyan);font-style:italic;">Stay In Your Lane</em></h2>
+  <p style="color:var(--text2);max-width:840px;font-size:.92rem;margin-bottom:14px;text-align:center;">Verifies the agent only answers queries within an allow-listed set of <code style="font-family:var(--ff-mono);font-size:.86em;">reference_topics</code>. Pairs naturally with input-rail guardrails as the regression-test for <em>scope creep</em>.</p>
+  <div class="diagram" style="font-size:.72rem;max-width:840px;padding:14px 18px;margin-bottom:14px;">CONVERSATION                              reference_topics = ["science"]
+
+  user  → "Tell me about general relativity."
+  agent → uses document_search → answers                                  ✓ on-topic
+  user  → "Got any chocolate cake recipes?"
+  agent → uses recipe_search   → answers                                  ✗ off-topic
+
+  Precision = on-topic answered / (on-topic + off-topic answered)         = 1 / 2  = 0.50
+  Recall    = on-topic answered / (on-topic + on-topic refused)           = 1 / 1  = 1.00
+  F1        = 0.67</div>
+  <div class="grid-2" style="max-width:820px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title" style="color:var(--amber)">Precision mode</div>
+      <p>Penalises the agent for <strong style="color:var(--white)">answering off-topic</strong>. Use when the bigger risk is the agent sliding into unsupported domains.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Recall mode</div>
+      <p>Penalises the agent for <strong style="color:var(--white)">refusing valid on-topic queries</strong>. Use when over-cautious refusals are the bigger risk.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.2 · In Practice</p>
+  <h2 class="slide-title">Designing Your <em style="color:var(--cyan);font-style:italic;">Eval Suite</em></h2>
+  <div class="grid-2" style="max-width:920px;gap:18px;align-items:start;">
+    <div>
+      <div style="font-family:var(--ff-mono);font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">tests / test_agent.py</div>
+      <div class="diagram" style="font-size:.66rem;max-width:none;padding:14px 16px;line-height:1.55;">from ragas.metrics.collections import (
+    ToolCallAccuracy, ToolCallF1,
+    AgentGoalAccuracyWithReference,
+    TopicAdherence,
+)
+from ragas.llms.base import llm_factory
+
+judge = llm_factory("gpt-4o-mini", client=client)
+
+async def test_book_flight_happy_path():
+    trace = await agent.run(scenario.input)
+
+    f1 = await ToolCallF1().ascore(
+        user_input=trace,
+        reference_tool_calls=scenario.tools)
+    assert f1.value &gt;= 0.80, "tool drift"
+
+    goal = await AgentGoalAccuracyWithReference(
+        llm=judge).ascore(
+        user_input=trace,
+        reference=scenario.outcome)
+    assert goal.value == 1.0, "goal not met"
+
+    topic = await TopicAdherence(
+        llm=judge, mode="precision").ascore(
+        user_input=trace,
+        reference_topics=["travel"])
+    assert topic.value &gt;= 0.95, "scope creep"</div>
+    </div>
+    <div>
+      <table class="ref-table" style="max-width:none;">
+        <thead><tr><th>Stage</th><th>Metric</th><th>Gate</th></tr></thead>
+        <tbody>
+          <tr><td>Local dev</td><td>ToolCall F1</td><td>≥ 0.70</td></tr>
+          <tr><td>PR check</td><td>ToolCall Accuracy</td><td>≥ 0.85</td></tr>
+          <tr><td>PR check</td><td>Goal Accuracy</td><td>= 1.0</td></tr>
+          <tr><td>Pre-prod</td><td>Topic Adherence</td><td>≥ 0.95</td></tr>
+          <tr><td>Production</td><td>Goal Accuracy (no-ref)</td><td>≥ 0.90 / day</td></tr>
+        </tbody>
+      </table>
+      <div class="callout border-d3" style="margin-top:14px;background:rgba(139,92,246,.05);">
+        <div class="callout-title d3">The eval-driven loop</div>
+        <p><strong style="color:var(--white)">1.</strong> Reproduce a prod bug as a test case · <strong style="color:var(--white)">2.</strong> Pick the metric that catches it · <strong style="color:var(--white)">3.</strong> Add to CI · <strong style="color:var(--white)">4.</strong> Watch the trend in Langfuse.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow d3">Session 3.3</p>
+  <h2 class="slide-title">Capstone Project</h2>
+  <div class="grid-3">
+    <div class="card" style="border-top:3px solid var(--d1)">
+      <div class="tag" style="background:rgba(59,130,246,.15);color:var(--d1)">Option A</div>
+      <div class="card-title">Autonomous PR Reviewer</div>
+      <p>Router topology. Security + Performance + Style workers. Human approval for blocking reviews. Langfuse traces.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d2)">
+      <div class="tag" style="background:rgba(20,184,166,.15);color:var(--d2)">Option B</div>
+      <div class="card-title">Incident Responder</div>
+      <p>Triage classifier + automated remediation. Knowledge graph of known incidents. Escalate only on unknown failures.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--d3)">
+      <div class="tag" style="background:rgba(139,92,246,.15);color:var(--d3)">Option C</div>
+      <div class="card-title">Research Synthesiser</div>
+      <p>Pipeline topology. Web + internal docs retrieval. Cited reports. Ragas faithfulness ≥0.85. Self-curating memory.</p>
+    </div>
+  </div>
+  <div class="callout border-d3" style="margin-top:14px;">
+    <div class="callout-title d3">Deliverables</div>
+    <p>Agent graph diagram · Memory design table · Tool inventory with safety class · 10 eval cases · Top 3 failure modes + mitigations</p>
+  </div>
+</div>
+
+<div class="slide slide-day" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Day Three · Extended</p>
+  <h2 class="day-title" style="color:var(--amber)">Agent Performance<br/>Engineering</h2>
+  <p style="color:var(--text2);font-size:1rem;max-width:520px;">Four levers that turn a working agent into a production-ready one: prompt caching, semantic caching, right-sized models, and async parallelism.</p>
+  <div class="pills" style="margin-top:24px;justify-content:center;">
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Prompt Caching</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Semantic Cache</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Model Routing</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Async Parallel</span>
+    <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Token Budgets</span>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">The Performance Tax</h2>
+  <div class="diagram" style="margin-bottom:16px;">10-step ReAct agent · 5,000-token system prompt
+
+Per call:    5,000 tokens × $3/MTok  =  $0.015
+10 calls:    $0.015 × 10             =  $0.15 / task
+1,000/day:   $0.15 × 1,000           =  $150 / day  ← just input tokens
+
+Multi-agent (5 agents × 3,000 tokens × 5 steps):
+             75,000 input tokens before a single output token</div>
+  <div class="grid-2" style="max-width:720px;">
+    <div class="card" style="border-top:3px solid var(--amber)">
+      <div class="card-title">Four Levers</div>
+      <p>
+        <strong style="color:var(--white)">Prompt Caching</strong> — 90% off repeated system prompts<br/>
+        <strong style="color:var(--white)">Semantic Cache</strong> — skip the LLM for similar queries<br/>
+        <strong style="color:var(--white)">Model Routing</strong> — Haiku for simple, Opus for hard<br/>
+        <strong style="color:var(--white)">Async Parallel</strong> — N steps in 1× latency, not N×
+      </p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--rose)">
+      <div class="card-title" style="color:var(--rose)">The Compound Cost Trap</div>
+      <p>Each agent in a multi-agent pipeline re-sends its own system prompt on every step. 5 agents × large system prompts = 5× the baseline cost before any work is done.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Prompt Caching <span style="color:var(--text3);font-size:.6em;font-family:var(--ff-body);">Anthropic / OpenAI</span></h2>
+  <div class="compare" style="margin-bottom:14px;">
+    <div class="compare-col" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);">
+      <div class="compare-head" style="background:rgba(245,158,11,.12);color:var(--amber)">Anthropic — Explicit</div>
+      <div class="compare-body">
+        Mark blocks with <code>cache_control: ephemeral</code><br/>
+        Cache write: 125% of normal price<br/>
+        Cache read: <strong style="color:var(--white)">10% of normal price (90% off)</strong><br/>
+        TTL: 5 min, resets on each hit<br/>
+        Min: 1,024 tokens (Sonnet/Haiku)
+      </div>
+    </div>
+    <div class="compare-col" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);">
+      <div class="compare-head" style="background:rgba(59,130,246,.12);color:var(--blue)">OpenAI — Automatic</div>
+      <div class="compare-body">
+        No code changes required<br/>
+        Stable prefix ≥ 1,024 tokens is eligible<br/>
+        Cache hit: <strong style="color:var(--white)">50% off input tokens</strong><br/>
+        Shown in <code>prompt_tokens_details.cached_tokens</code>
+      </div>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">Structure rule</div>
+    <p>Stable content first (system prompt, tool defs, domain knowledge). Dynamic content last (user message, date, session ID). Reversing this order breaks the cache on every call.</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Right-Sized Models</h2>
+  <div class="grid-3" style="margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Haiku 4.5 — Fast</div>
+      <p>Classification · Extraction · Routing decisions · Yes/no guards · JSON parsing · Simple Q&amp;A<br/><br/><strong style="color:var(--white)">~20× cheaper than Opus</strong></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue)">
+      <div class="card-title" style="color:var(--blue)">Sonnet 4.6 — Balanced</div>
+      <p>Code generation · Summarisation · Multi-step reasoning · Tool orchestration · RAG synthesis<br/><br/><strong style="color:var(--white)">Default for agentic tasks</strong></p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div class="card-title" style="color:var(--purple)">Opus 4.6 — Powerful</div>
+      <p>Complex planning · Cross-document reasoning · Research synthesis · Nuanced judgment<br/><br/><strong style="color:var(--white)">Use sparingly</strong></p>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">RouteLLM (Stanford)</div>
+    <p>Learned routing classifier trained on your data. Consistently achieves <strong style="color:var(--white)">2–4× cost reduction</strong> with &lt;5% quality loss. Source: github.com/lm-sys/RouteLLM</p>
+  </div>
+</div>
+
+<div class="slide slide-content" data-day="3">
+  <p class="eyebrow" style="color:var(--amber)">Session 3.4 · Extended</p>
+  <h2 class="slide-title">Semantic Cache &amp; Async Parallelism</h2>
+  <div class="grid-2" style="max-width:760px;margin-bottom:14px;">
+    <div class="card" style="border-top:3px solid var(--teal)">
+      <div class="card-title">Semantic Caching</div>
+      <p>Store LLM responses, serve similar queries from cache — <strong style="color:var(--white)">zero LLM calls</strong> for cache hits.<br/><br/>
+      LangChain: <code>InMemorySemanticCache</code> / <code>RedisSemanticCache</code><br/>
+      threshold=0.95 → conservative (near-exact)<br/>
+      threshold=0.85 → aggressive (similar queries)<br/><br/>
+      ⚠ Use TTLs. Stale answers are wrong answers.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div class="card-title">Async Parallelism</div>
+      <p>Sequential N steps = N× latency.<br/>Parallel N steps ≈ 1× latency.<br/><br/>
+      <code>asyncio.gather(*tasks)</code> — fan-out multiple LLM calls<br/>
+      LangGraph <code>Send</code> API — parallel nodes with fan-in<br/>
+      <code>asyncio.Semaphore(5)</code> — cap concurrency to avoid rate limits<br/><br/>
+      5 docs @ 1.5s each: <strong style="color:var(--white)">7.5s → 1.7s</strong></p>
+    </div>
+  </div>
+  <div class="callout" style="border-color:var(--amber)">
+    <div class="callout-title" style="color:var(--amber)">Lab 3.4 — Performance Audit</div>
+    <p>Instrument your capstone: log token usage per call · enable prompt caching · add model routing · parallelise tool calls. Target: ≥40% token cost reduction · ≥30% p95 latency reduction.</p>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ─────────── CHROME ─────────── -->
+<div id="chrome">
+  <button class="nav-btn" id="btn-prev" title="Previous (←)">←</button>
+  <button class="nav-btn" id="btn-next" title="Next (→ or Space)">→</button>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <span id="slide-counter">1 / 1</span>
+  <span id="day-indicator">Intro</span>
+</div>
+
+<div id="key-hint">← → Space to navigate</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let current = 0;
+
+const fill = document.getElementById('progress-fill');
+const counter = document.getElementById('slide-counter');
+const dayInd = document.getElementById('day-indicator');
+const keyHint = document.getElementById('key-hint');
+
+const dayConfig = {
+  0: { label: 'Intro',  color: '#22d3ee' },
+  1: { label: 'Day 1',  color: '#3b82f6' },
+  2: { label: 'Day 2',  color: '#14b8a6' },
+  3: { label: 'Day 3',  color: '#8b5cf6' },
+};
+
+function goTo(n, direction = 1) {
+  if (n < 0 || n >= total) return;
+  const prev = slides[current];
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 300);
+
+  current = n;
+  slides[current].classList.add('active');
+
+  // Progress
+  fill.style.width = ((current / (total - 1)) * 100) + '%';
+  counter.textContent = (current + 1) + ' / ' + total;
+
+  // Day indicator
+  const day = parseInt(slides[current].dataset.day || '0');
+  const cfg = dayConfig[day] || dayConfig[0];
+  dayInd.textContent = cfg.label;
+  dayInd.style.color = cfg.color;
+}
+
+document.getElementById('btn-prev').addEventListener('click', () => goTo(current - 1, -1));
+document.getElementById('btn-next').addEventListener('click', () => goTo(current + 1, 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1, 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, -1); }
+  if (e.key === 'Home') goTo(0);
+  if (e.key === 'End') goTo(total - 1);
+});
+
+// Touch swipe
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) goTo(dx < 0 ? current + 1 : current - 1);
+}, { passive: true });
+
+// Hide key hint after 4s
+setTimeout(() => keyHint.classList.add('hidden'), 4000);
+
+// Init
+goTo(0);
+</script>
+</body>
+</html>
