@@ -11,8 +11,12 @@ topics:
     title: "Sens-AI Framework"
   - id: t-rulescommandsskills
     title: "Rules, Commands & Skills"
+  - id: t-harness
+    title: "Harness Engineering"
   - id: t-mcp
     title: "Model Context Protocol"
+  - id: t-skills
+    title: "Agent Skills"
 ---
 
 Yesterday you built agents that execute tasks. Today you learn to *develop with* agents as first-class collaborators. AIFSD is the methodology; the Sens-AI Framework is the mental model; Rules/Commands/Skills is the configuration layer; MCP is the wiring standard.
@@ -368,30 +372,133 @@ async def orchestrate_review(pr_diff: str) -> dict:
     }
 ```
 
+### Topic: Harness Engineering {#t-harness}
+
+> *Agent = Model + Harness.*
+> — Birgitta Böckeler · martinfowler.com/articles/harness-engineering · 2026
+
+LLMs are non-deterministic, don't know your codebase, and think in tokens — not in your domain. The **harness** is everything around the model that closes that gap: the rules, skills, MCPs, linters, tests, and review agents that **steer** it before it acts and **catch** it after. Rules / commands / skills aren't *the* harness — they're its *building blocks*.
+
+```
+                     User Harness
+       ┌─────────── you build this ───────────┐
+       │   Builder Harness (system prompt,    │
+       │   retrieval, orchestration)          │
+       │   ┌────────────────────────────┐     │
+       │   │       Model                │     │
+       │   │     tokens in / out        │     │
+       │   └────────────────────────────┘     │
+       │     rules · skills · MCPs ·          │
+       │     linters · review agents          │
+       └──────────────────────────────────────┘
+
+   FEEDFORWARD (guides)        FEEDBACK (sensors)
+   steer before it acts        observe after it acts
+   AGENTS.md · skills · LSP    linters · tests · review agents
+```
+
+#### Two Axes — Direction × Execution
+
+The strongest harness mixes all four cells. Feedforward-only and the agent never finds out whether the rules worked. Feedback-only and it repeats the same mistakes. Computational catches structure cheaply; inferential catches semantics expensively.
+
+|  | Computational (deterministic) | Inferential (LLM-driven) |
+|---|---|---|
+| **Feedforward · guides** | Type systems, language servers, `.editorconfig`, codemods, scaffolding, framework conventions. *Cheap, reliable, every run.* | `AGENTS.md`, `CLAUDE.md`, skills, how-tos, architecture docs, MCPs that surface team knowledge. *Slower, encodes intent.* |
+| **Feedback · sensors** | Linters, type-checkers, unit tests, ArchUnit, dep-cruiser, mutation testing, coverage gates. *Best when their messages are written for the agent.* | Review agents, LLM-as-judge, response samplers, log-anomaly detectors, drift scanners. *Expensive — schedule them off the hot path.* |
+
+#### Three Things to Regulate
+
+| Harness | What it covers | Tooling maturity |
+|---|---|---|
+| **Maintainability** | Internal code quality: duplication, complexity, coverage, style, drift | **HIGH** — decades of pre-existing tooling (linters, type-checkers, ArchUnit). Plug in and pay back immediately. |
+| **Architecture Fitness** | Non-functional: performance, observability, security posture, resilience | **EMERGING** — encoded as fitness functions. Workable, mostly bespoke per team. |
+| **Behaviour** | Does the app actually do what the user wanted? | **OPEN PROBLEM** — spec in, AI-written tests out. Approved-fixtures and human-curated suites help, but the gap is real. *Where supervision still earns its keep.* |
+
+:::tip Harnessability is a property of your codebase
+Strong types, clear module boundaries, mature frameworks → easy to harness. Untyped, monolithic, legacy → the harness is hardest to build exactly where it's most needed. **Greenfield teams should design for harnessability on day one.**
+:::
+
+#### The Steering Loop — Keep Quality Left
+
+Spread checks by cost. The earlier a sensor fires, the cheaper the fix.
+
+```
+  GUIDES (feedforward)              SENSORS (feedback)              SCOPE
+  ─────────────────────             ────────────────────             ─────
+  AGENTS.md, skills, LSP    ─▶ AGENT ─▶  linters, type-check,        PRE-COMMIT
+  ref docs, codemods                     unit tests, /code-review        cheap · every change
+                                              │
+                                              ▼  fixes self-applied
+                                         human review                 PRE-INTEGRATION
+                                              │                            judgment · social accountability
+                                              ▼
+                                  ─── INTEGRATION ───
+                                              │
+                                              ▼
+                                         rerun fast sensors           POST-INTEGRATION
+                                         + mutation tests             broader · slower
+                                         + /architecture-review
+                                              │
+                                              ▼
+                                  CONTINUOUS DRIFT & HEALTH          OFF-PATH
+                                  /find-dead-code · dependabot              run on a schedule
+                                  /coverage-quality · log-anomalies         feeds new commits
+                                  SLO watchers · janitor agents
+```
+
+**Three operating principles:**
+
+- **Iterate the harness, not just the prompt.** When the same mistake recurs, don't re-prompt — *add a guide or a sensor*. Coding agents make custom linters and structural tests cheap to write.
+- **Aim humans at the hard part.** A good harness doesn't replace human review — it *redirects* it. Computational sensors handle structure; inferential handles most semantics; humans handle correctness, intent, trade-offs.
+- **Treat the harness as code.** Version it, review it, regress on it. The harness is now part of your engineering output.
+
 ### Topic: Model Context Protocol (MCP) {#t-mcp}
 
-#### What is MCP?
+#### What MCP Solves
 
-MCP (Model Context Protocol) is an open standard introduced by Anthropic in late 2024. It separates **tool servers** from **agent clients** using a standardised JSON-RPC 2.0 interface — any MCP-compatible agent can connect to any MCP-compatible tool server without custom integration code.
+Before MCP: every agent needed custom integration code per tool. **N agents × M tools = N·M integrations.**
+After MCP: write a tool server once, any compatible agent uses it. **N + M.**
+
+MCP is an open standard introduced by Anthropic in late 2024. It defines three roles communicating over **JSON-RPC 2.0** — usually transported over `stdio` (local subprocess) or **streamable HTTP** (remote, OAuth-secured).
+
+#### Three Roles, One Protocol
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   MCP ARCHITECTURE                               │
+│                  MCP HOST (your AI app)                          │
+│  ┌─────────────────────────────────────────┐                    │
+│  │           LLM Engine                    │                    │
+│  │   Claude · GPT · Gemini · Llama         │                    │
+│  └─────────────────────────────────────────┘                    │
 │                                                                  │
-│   MCP Client (Agent)          MCP Server (Tool Provider)        │
-│  ───────────────────          ─────────────────────────         │
-│                                                                  │
-│   Claude Code          ◀──▶   Filesystem server                 │
-│   Custom LangGraph     ◀──▶   GitHub server                     │
-│   Any MCP client       ◀──▶   PostgreSQL server                 │
-│                        ◀──▶   Your custom server                │
-│                                                                  │
-│        JSON-RPC 2.0 over stdio / HTTP+SSE                        │
-└─────────────────────────────────────────────────────────────────┘
+│  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐  │
+│  │   Client #1    │   │   Client #2    │   │   Client #3    │  │
+│  │  stdio         │   │  http+sse      │   │  stdio         │  │
+│  └───────┬────────┘   └───────┬────────┘   └───────┬────────┘  │
+└──────────┼────────────────────┼─────────────────────┼───────────┘
+           │ JSON-RPC 2.0       │                     │
+           ▼                    ▼                     ▼
+   ┌──────────────┐    ┌──────────────┐      ┌──────────────┐
+   │ Filesystem   │    │   GitHub     │      │  PostgreSQL  │
+   │ MCP Server   │    │ MCP Server   │      │  MCP Server  │
+   └──────────────┘    └──────────────┘      └──────────────┘
 ```
 
-Before MCP: every agent needed custom integration code per tool.
-After MCP: write a tool server once, any agent uses it. Claude Code itself is an MCP client — its file system and terminal access are MCP tools under the hood.
+**HOST** — the user-facing AI app (Claude Desktop, Cursor, Windsurf, Continue, your LangGraph agent). Owns the LLM, UI, *and the consent layer* — every tool call passes through host approval before reaching a server. Five responsibilities: spawn clients · aggregate capabilities · route LLM tool calls to the right client · gate consent · own the UI / auth.
+
+**CLIENT** — an in-process module of the host. Holds *exactly one* stateful connection to *exactly one* server. `N servers ⇒ N clients`. Speaks JSON-RPC. Lifecycle: `initialize` → server returns `capabilities, tools, resources, prompts` → `notifications/initialized` → runtime `tools/call` requests.
+
+**SERVER** — a standalone process exposing **three capability types**:
+
+| Type | What it is | Examples |
+|---|---|---|
+| **Tools** | Executable functions, model-invoked, side effects allowed | `write_file`, `run_query`, `send_email` |
+| **Resources** | Read-only data sources, addressed by URI | `file://README.md`, `postgres://schema` |
+| **Prompts** | User-triggered templates exposed via slash-menu | `/summarize_pr`, `/explain_query` |
+
+:::tip Mental model
+Host = the browser tab. LLM = the engine inside it. Each MCP client = one fetch connection (one per origin). Servers = the websites being fetched. The deal: wrap any system once as an MCP server — local CLI, internal API, vector DB — and *every* MCP host can use it without bespoke glue.
+:::
 
 #### Using MCP Servers from LangGraph
 
@@ -520,6 +627,82 @@ Configure MCP servers in `.claude/settings.json` (project-level) or `~/.claude/s
 ```
 
 Claude Code discovers and uses these tools automatically — no restart required.
+
+### Topic: Agent Skills {#t-skills}
+
+**Agent Skills** are an Anthropic open standard for packaging *knowledge and workflows* an agent can read on demand. A skill is just a folder with a `SKILL.md` and optional scripts/references — version-controlled, portable, and adopted by Claude · Cursor · GitHub Copilot · VS Code · Codex · Gemini CLI · OpenHands · Goose · 25+ others. **Author once, run anywhere.**
+
+#### Anatomy of a Skill
+
+```
+📁 my-skill/                   ← just a folder
+├── 📄 SKILL.md                ← REQUIRED: YAML frontmatter + markdown
+├── 📁 scripts/                ← optional: executables the agent runs
+│   ├── lint.sh
+│   └── coverage.py
+├── 📁 references/             ← optional: docs the agent reads on demand
+│   └── style-guide.md
+└── 📁 assets/                 ← optional: templates the agent uses
+    └── template.md
+```
+
+`SKILL.md` is the heart:
+
+```markdown
+---
+name: pr-review
+description: Reviews PRs for security, tests, and style.
+---
+
+# How to Review a PR
+
+1. Fetch diff via `gh pr diff`
+2. Run scripts/lint.sh
+3. Check tests ≥ 80% coverage
+4. Post inline comments
+```
+
+**YAML frontmatter** for discovery (loaded into every session as a tiny metadata blob). **Markdown body** for execution (loaded only when the skill is *activated*).
+
+#### Progressive Disclosure — Three Stages
+
+Skills load lazily. You can hand an agent **100 skills for under 5K tokens of metadata**; only the matching one expands, only the needed files load.
+
+```
+1 · DISCOVERY                  2 · ACTIVATION                 3 · EXECUTION
+─────────────                  ─────────────                  ─────────────
+at startup                     task matches a skill           agent runs the steps
+loaded:                        loaded:                        loaded:
+  name + description            + full SKILL.md (1 only)        + scripts on demand
+  for ALL skills                  others stay metadata-only      + references on demand
+
+  ≈ 50 tokens × N skills       full body of matched skill     only what the step needs
+  tiny baseline footprint      ≈ a few hundred more tokens     no bloat · no waste
+```
+
+#### MCP vs. Skills — Complementary, Not Either-Or
+
+A skill tells the agent **what** to do; MCP gives it the **hands** to actually do it. Don't pick — compose. Capability without competence is reckless. Competence without capability is just advice.
+
+| Dimension | **MCP** — the hands | **Skills** — the brain |
+|---|---|---|
+| Layer | Transport / wire protocol | Knowledge / workflow package |
+| Format | JSON-RPC over stdio / streamable HTTP | Folder of markdown + `SKILL.md` |
+| Provides | Tools · resources · prompts | Instructions · scripts · references |
+| Loaded | Connection live for whole session | Progressive disclosure (3 stages) |
+| Lives | External process, local or remote | In the LLM context window |
+| Authored by | Platform / SRE / vendor | Domain expert, team lead |
+| Answers | **CAN** the agent reach the system? | **SHOULD** the agent do these steps? |
+
+```
+┌─────────────────────────┐  calls   ┌─────────────────────────┐
+│   SKILL · pr-review     │ ───────▶ │      MCP SERVERS        │
+│ 1. github.get_diff(id)  │          │ github · get_diff       │
+│ 2. run scripts/lint.sh  │ ◀─────── │ filesystem · read       │
+│ 3. github.post_review() │ returns  │ postgres · query        │
+│   tells WHAT to do      │  data    │  gives HANDS to do it   │
+└─────────────────────────┘          └─────────────────────────┘
+```
 
 :::lab Lab 2.1 — Sens-AI Habits + MCP Server
 **Objectives:**

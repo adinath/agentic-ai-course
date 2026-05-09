@@ -19,27 +19,28 @@ Frameworks are training wheels for agents — helpful until they get in the way.
 
 #### Framework Landscape
 
-Every agent framework is an opinionated wrapper around the same PRAO loop you built in session 1.1. Choose based on what you need to control.
+Every agent framework is an opinionated wrapper around the same PRAO loop you built in session 1.1. Choose based on what you need to control — and which platform you live on.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  AGENT FRAMEWORKS — DECISION MATRIX                          │
-├──────────────┬────────────────────────────────────────────-─┤
-│  LangGraph   │ Explicit state graphs, checkpoints, HITL      │
-│              │ → Production agents needing control flow      │
-├──────────────┼──────────────────────────────────────────────┤
-│  CrewAI      │ Declarative role-based teams                  │
-│              │ → Quick prototypes, role-driven workflows     │
-├──────────────┼──────────────────────────────────────────────┤
-│  AutoGen     │ Multi-agent conversations in natural language │
-│              │ → Research, debate, collaborative tasks       │
-├──────────────┼──────────────────────────────────────────────┤
-│  Custom loop │ Maximum control, zero overhead                │
-│              │ → Unusual architectures, learning the basics  │
-└──────────────┴──────────────────────────────────────────────┘
-```
+| Framework | Strength | Use when |
+|---|---|---|
+| **LangGraph** ★ | Explicit state graphs, checkpoints, time-travel debugging, human-in-the-loop | Production agents needing tight control flow |
+| **CrewAI** | Declarative role-based teams, fast scaffolding | Quick prototypes, role-driven workflows |
+| **AutoGen** | Multi-agent conversations in natural language | Research, debate, collaborative tasks |
+| **LlamaIndex** | Event-driven Workflows, 300+ data connectors, best-in-class RAG & indexing | Data/RAG-first agents — doc Q&A, knowledge bases, structured extraction |
+| **Google ADK** | Multi-language (Py/TS/Go/Java), Session/State/Memory, A2A native | Production agents on Vertex AI / Gemini Enterprise |
+| **AWS Strands** | Model-driven loop, MCP-native, OpenTelemetry observability | Lean agents on AWS (Lambda, Bedrock AgentCore) |
+| **Custom loop** | Maximum control, zero overhead | Unusual architectures, teaching the basics |
 
-**LangGraph is the recommended choice for production work** — explicit state, serializable graphs, streaming, and human-in-the-loop built in.
+**LangGraph is the recommended default for production work** — explicit state, serialisable graphs, streaming, checkpointing, and human-in-the-loop built in. It's also the framework used throughout this course.
+
+#### Hosted vs. Local Models
+
+Two runtime choices, with very different trade-offs. **Use both** in development; pick the right one per task.
+
+| Channel | Examples | Use for |
+|---|---|---|
+| **Hosted** (cloud API) | Anthropic Claude, OpenAI, Gemini, Bedrock | Production reasoning, complex code, multi-modal, anything customer-facing |
+| **Local** (on-device) | Ollama (llama3.2, qwen2.5-coder), vLLM | Air-gapped dev, cost-sensitive batch jobs, eval harnesses, integration tests |
 
 #### LangGraph Setup
 

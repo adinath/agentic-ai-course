@@ -9,8 +9,12 @@ topics:
     title: "Plan and Execute"
   - id: t-rag
     title: "RAG for Agents"
+  - id: t-chunking
+    title: "Chunking Strategies"
+  - id: t-kg
+    title: "Knowledge Graphs & GraphRAG"
   - id: t-rageval
-    title: "RAG Evaluation"
+    title: "RAG Evaluation with Ragas"
 ---
 
 ReAct is reactive — it figures out the next step only after seeing the previous result. Plan-and-Execute is proactive — it lays out the full roadmap before the first tool call. RAG gives the agent a long-term memory it can actually trust.
@@ -294,56 +298,209 @@ def search_knowledge_base(query: str, k: int = 4) -> list[dict]:
     ]
 ```
 
-#### Knowledge Graphs for Structured Retrieval
+### Topic: Chunking Strategies {#t-chunking}
 
-Vector search is powerful but returns unordered chunks — it loses the *relationships* between entities. A knowledge graph stores entities and their connections, enabling structured traversal queries.
+The retriever can only find what the chunker stored. Chunking is the most under-rated knob in RAG — bad chunking starves the LLM of context no matter how good your embeddings are.
+
+#### Why Chunk Size Matters
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    KNOWLEDGE GRAPH                        │
-│                                                           │
-│  [LangGraph] ──uses──▶ [StateGraph]                      │
-│      │                      │                            │
-│    ──has──▶ [ToolNode] ──executes──▶ [Tool]             │
-│      │                                                   │
-│    ──integrates──▶ [Anthropic Claude]                    │
-│                         │                                │
-│                    ──supports──▶ [Tool Calling]          │
-└──────────────────────────────────────────────────────────┘
+   Fragmented           Sweet spot              Diluted
+┌──────────────┬────────────────────────┬──────────────────┐
+│ no surrounding│  256 – 1024 tokens   │ multiple topics  │
+│   context     │   (domain-dependent)  │   per chunk      │
+└──────────────┴────────────────────────┴──────────────────┘
+   ~50 tok          ~512 tok                ~4096 tok
 ```
+
+There is no universal answer — domain *and* embedding model dictate the band. The three failure modes:
+
+- **Too small** — snippets ripped from context. Retrieval finds the right line, but the LLM has nothing to reason with.
+- **Too large** — multiple topics averaged into one embedding vector. Cosine similarity drops, retrieval misses, irrelevant text fills the context window.
+- **Wrong boundary** — cuts mid-sentence or mid-code-block. Embedding distorted, LLM sees grammatically broken text.
+
+Run an A/B sweep: index the same corpus at 128/256/512/1024 tokens, replay your eval set, pick the cheapest size that hits your faithfulness threshold.
+
+#### Strategy 1 — Fixed-Size + Overlap
+
+The baseline. Cut every `chunk_size` characters/tokens with a sliding overlap so context isn't lost at boundaries.
+
+```
+…the quick brown fox jumps over the lazy dog. The dog barked at the moon…
+
+CHUNKS  size = 512  overlap = 50
+[ chunk 1  0–512 ]
+       [ chunk 2  462–974 ]   ← 50-token overlap with chunk 1
+              [ chunk 3  924–1436 ]
+```
+
+`stride = chunk_size − overlap`. Typical overlap: 10–20% of `chunk_size`.
+
+- **When to use:** plain unstructured text, demos, baseline benchmarks. Fast and predictable.
+- **Watch out for:** cuts code blocks, tables, JSON, and Markdown headings in half. Storage grows linearly with overlap.
+
+#### Strategy 2 — Recursive Character Splitting
+
+Try natural separators in priority order, fall back to smaller units only when a chunk is still too big.
+
+```
+\n\n   →   \n   →   ". "   →   " "   →   char
+paragraph  line     sentence    word     last resort
+priority 1 …                              priority 5
+
+Each step: if any chunk ≤ chunk_size  →  ✓ keep this split
+```
+
+- **When to use:** default for prose — docs, articles, blog posts, support tickets. Almost always beats fixed-size.
+- **Watch out for:** the default separator list is English-centric. Code, JSON, and structured formats need a custom list (`Language.PYTHON`, `Language.MARKDOWN`).
 
 ```python
-# Using NetworkX for lightweight in-memory knowledge graphs
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+
+# Generic prose
+prose_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=100,
+    separators=["\n\n", "\n", ". ", " ", ""],
+)
+
+# Python source code — splits on def/class/etc. before falling back to lines
+code_splitter = RecursiveCharacterTextSplitter.from_language(
+    language=Language.PYTHON, chunk_size=1000, chunk_overlap=120,
+)
+```
+
+#### Strategy 3 — Document-Aware Chunking
+
+When the source has structure, exploit it. Markdown headings, HTML sections, RST, JSON, and code already carry author-intended boundaries — use them directly *and* preserve the hierarchy as searchable metadata.
+
+```
+SOURCE                              CHUNKS WITH HIERARCHY
+# Authentication       ─────▶       Chunk 1 · Authentication
+                                    { h1: "Authentication" }
+## OAuth                            Chunk 2 · OAuth
+                                    { h1: "Authentication", h2: "OAuth" }
+### PKCE                            Chunk 3 · PKCE
+                                    { h1: "Authentication", h2: "OAuth", h3: "PKCE" }
+## API Keys                         Chunk 4 · API Keys
+                                    { h1: "Authentication", h2: "API Keys" }
+```
+
+Each chunk inherits its heading path. The LLM gets the topic context for free; metadata filters let you scope queries (e.g. `where h2 = "OAuth"`).
+
+- **When to use:** Markdown, HTML, source code, RST, JSON. Anywhere structure exists.
+- **Watch out for:** sections vary wildly in size — combine with a size-based splitter inside each section. Useless on plain prose.
+
+#### Strategy 4 — Semantic Chunking
+
+Embed every sentence, measure cosine distance between adjacent sentences, cut where the distance peaks above a threshold (e.g. the 95th percentile of all distances). Each chunk now contains a single coherent topic.
+
+```
+distance
+  1.0 ┤    ▲                ▲                            ▲
+      │    │                │                            │
+  0.5 ┤────│────────────────│────────────────────────────│──── threshold
+      │    │     │  │       │   │  │   │   │  │   │      │  │
+  0.0 ┤────●─────●──●───────●───●──●───●───●──●───●──────●──●──
+        topic A    │ topic B    │      topic C           │ topic D
+                  cut          cut                      cut
+```
+
+- **When to use:** long-form technical writing where topics shift mid-section — research papers, transcripts, mixed-topic blog posts. Quality over speed.
+- **Watch out for:** slow (embeds every sentence at index time), threshold tuning required, falls back to recursive splitting if all sentences look similar.
+
+#### Strategy 5 — Parent-Child (Small-to-Big) Retrieval
+
+Embed *small* precise chunks for retrieval, but return their *large* parent for context. Best of both worlds: precise matching, rich context for the LLM.
+
+```
+                        ┌──────────────────────────┐
+                        │   Parent Document        │
+                        │  ~2000 tok · NOT embedded│
+                        └─────┬─────┬─────┬────────┘
+                              │     │     │
+                    ┌─────────┘     │     └─────────┐
+                    ▼               ▼               ▼
+                 Child 1         Child 3        Child 4
+              ~200 tok          ← match        ~200 tok
+              embedded         (cosine 0.91)   embedded
+                                   │
+                  query ──── 1. match small ──┘
+                            2. return parent (large) for context
+```
+
+Implementation: `ParentDocumentRetriever` (LangChain), `SmallToBigRetriever` (LlamaIndex).
+
+#### What's Next — 2024+ Techniques
+
+- **Contextual Retrieval (Anthropic, 2024)** — prepend an LLM-generated 50-100 token context blurb to each chunk before embedding. ~49% retrieval-failure reduction on standard benchmarks. Pairs with prompt caching to keep cost flat.
+- **Late Chunking (Jina AI, 2024)** — embed the whole document with a long-context embedding model, *then* slice the resulting token embeddings. Each chunk's vector now reflects document-wide context.
+
+### Topic: Knowledge Graphs & GraphRAG {#t-kg}
+
+Vector search retrieves what is **similar**. Knowledge graphs retrieve what is **related**. For multi-hop questions ("X of Y of Z"), similarity quietly fails and relations win.
+
+#### When Vector RAG Hits a Wall
+
+```
+QUERY:  "What products does the company that acquired Acme sell?"
+
+VECTOR RAG (top-K chunks)              KNOWLEDGE GRAPH (traversal)
+
+▸ "Acme was acquired in Q2 2024…"      [Acme] ──acquired_by──▶ [TechCo]
+▸ "TechCo's product line includes…"                                │
+▸ "Tech-sector M&A trends…"  (distract)                          sells
+                                                                   ▼
+✗ LLM must synthesise across chunks      ✓ Direct multi-hop traversal
+   no single chunk has the chained         answer = the nodes returned
+   answer                                  by the query
+```
+
+#### Six Wins for Knowledge Graphs
+
+| Dimension | Vector RAG | Knowledge Graph |
+|---|---|---|
+| Multi-hop reasoning | Brittle — synthesis across chunks | Native — graph traversal |
+| Explainability | Opaque cosine scores | The path *is* the answer |
+| Determinism | Embedding drift between models | Exact traversal — same query, same path |
+| Schema | None — free text | Typed entities & relations |
+| Aggregations | Very limited | Count, group, filter, shortest-path |
+| Phantom entities | Hallucination risk | Only existing nodes can be returned |
+
+**Best-fit domains:** org charts, supply chains, compliance & regulation, code dependencies, drug interactions, fraud rings — anywhere relations *are* the data.
+
+**The trade-off:** index-time cost rises. Entity extraction (LLM-driven) and schema discipline are required. Setup is days, not minutes.
+
+#### A Lightweight In-Memory Knowledge Graph
+
+```python
 import networkx as nx
 from langchain_core.tools import tool
 
-# Build a knowledge graph of your codebase architecture
 kg = nx.DiGraph()
 kg.add_nodes_from([
     ("LangGraph", {"type": "framework", "version": "1.1"}),
     ("StateGraph", {"type": "class", "module": "langgraph.graph"}),
-    ("ToolNode", {"type": "class", "module": "langgraph.prebuilt"}),
+    ("ToolNode",   {"type": "class", "module": "langgraph.prebuilt"}),
 ])
 kg.add_edges_from([
-    ("LangGraph", "StateGraph", {"relation": "provides"}),
-    ("LangGraph", "ToolNode", {"relation": "provides"}),
-    ("StateGraph", "ToolNode", {"relation": "can_contain"}),
+    ("LangGraph",  "StateGraph", {"relation": "provides"}),
+    ("LangGraph",  "ToolNode",   {"relation": "provides"}),
+    ("StateGraph", "ToolNode",   {"relation": "can_contain"}),
 ])
 
 @tool
-def query_knowledge_graph(entity: str, relation: str = None) -> list[dict]:
-    """Query the knowledge graph for an entity and its relationships.
+def query_knowledge_graph(entity: str, relation: str | None = None) -> list[dict]:
+    """Look up an entity and its outgoing relationships.
 
     Args:
-        entity: The entity name to look up (e.g. 'LangGraph', 'StateGraph').
-        relation: Optional. Filter by relation type (e.g. 'provides', 'depends_on').
-
+        entity: The entity to look up (e.g. 'LangGraph').
+        relation: Optional filter by relation type (e.g. 'provides').
     Returns:
-        List of {"from": "...", "relation": "...", "to": "...", "attributes": {...}}
+        List of {"from", "relation", "to", "attributes"} edges.
     """
     if entity not in kg:
-        return [{"error": f"Entity '{entity}' not in knowledge graph"}]
-
+        return [{"error": f"Entity '{entity}' not in graph"}]
     results = []
     for source, target, data in kg.edges(entity, data=True):
         if relation is None or data.get("relation") == relation:
@@ -356,6 +513,28 @@ def query_knowledge_graph(entity: str, relation: str = None) -> list[dict]:
     return results
 ```
 
+For production-scale graphs use **Neo4j** (Cypher queries) or **Memgraph** (open-source, Bolt-compatible). Both have first-class LangChain integrations.
+
+#### GraphRAG — The Hybrid Pattern
+
+The strongest RAG architecture in 2025 is hybrid: **vector for entry**, **graph for expansion**, **LLM for grounding**.
+
+```
+QUERY-TIME · HYBRID GRAPHRAG
+
+Query  ──▶  Vector seed  ──▶  Graph expand  ──▶  Subgraph  ──▶  LLM
+            (entry nodes)     (1–2 hop)         (facts as     (grounded
+                                                 context)      answer)
+
+  SIMILARITY            RELATIONS              GROUNDING
+
+Index-time: LLM extracts entities + relations from each chunk
+            → graph DB & vector index of entity descriptions
+```
+
+- **Use both when:** relational queries on top of an unstructured corpus, audit-required answers, "list / count / who-related-to-whom" questions over enterprise knowledge.
+- **Stick with vector RAG when:** pure semantic search, long-form prose Q&A, fast iteration, no clear entity schema. Don't pay the GraphRAG tax for similarity-only problems.
+
 ### Topic: RAG Evaluation with Ragas {#t-rageval}
 
 You cannot improve what you cannot measure. Ragas is the standard library for evaluating RAG pipelines — it measures whether your retrieval is actually helping the agent answer correctly.
@@ -364,24 +543,39 @@ You cannot improve what you cannot measure. Ragas is the standard library for ev
 pip install "ragas>=0.2" datasets
 ```
 
-#### The Four Ragas Metrics
+#### How Ragas Actually Works
+
+Ragas decomposes each answer into atomic claims (or sentences, or entities), then uses an **LLM-as-judge** to score every claim against the retrieved context, the ground truth, or the question itself.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  RAGAS EVALUATION METRICS                                        │
-├────────────────────────┬────────────────────────────────────────┤
-│  Faithfulness          │ Does the answer match the retrieved     │
-│                        │ context? (hallucination detector)       │
-├────────────────────────┼────────────────────────────────────────┤
-│  Answer Relevancy      │ Is the answer relevant to the question? │
-│                        │ (response quality)                      │
-├────────────────────────┼────────────────────────────────────────┤
-│  Context Precision     │ Are the retrieved chunks actually useful?│
-│                        │ (retrieval precision)                   │
-├────────────────────────┼────────────────────────────────────────┤
-│  Context Recall        │ Did we retrieve everything needed?      │
-│                        │ (retrieval completeness)                │
-└────────────────────────┴────────────────────────────────────────┘
+EVALUATION SAMPLE                                METRIC SCORES (0–1)
+┌─────────────────────────────┐                 ┌───────────────────┐
+│ question      "Who acquired │                 │ Faithfulness 0.92 │
+│               Acme & when?" │ ──▶ LLM ──▶     │ Answer Rel.  0.88 │
+│ answer        "TechCo Q2…"  │     judge       │ Ctx Precision 0.75│
+│ retrieved_ctx [chunks]      │     (gpt-4o-mini)│ Ctx Recall   0.81 │
+│ ground_truth  (optional)    │                 └───────────────────┘
+└─────────────────────────────┘
+```
+
+#### The Four Ragas Metrics
+
+| Metric | What it catches | Needs ground truth? |
+|---|---|---|
+| **Faithfulness** | Hallucinations — claims in the answer that aren't supported by retrieved context | No |
+| **Answer Relevancy** | Drift — answer not aligned with the question | No |
+| **Context Precision** | Noisy retrieval — irrelevant chunks ranked high | Yes (ideal) / No (LLM-only mode) |
+| **Context Recall** | Missed relevant info — retriever didn't return what was needed | Yes |
+
+Three of four metrics work **without ground truth**, so you can run them on live production traffic. Wire the result into CI: fail the build when Faithfulness drops below your threshold and the hallucination never ships.
+
+```python
+result = evaluate(
+    dataset,
+    metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+    llm=evaluator_llm,
+    embeddings=evaluator_embeddings,
+)
 ```
 
 #### Running Ragas Evaluation

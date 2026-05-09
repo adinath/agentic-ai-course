@@ -165,42 +165,74 @@ Memory is not one thing — it is four different systems, each with a different 
 
 #### The Four Memory Types
 
+| Type | Human analogy | Storage | Lifetime | Loaded |
+|---|---|---|---|---|
+| **Session (Working)** | Short-term scratchpad | LangGraph `AgentState` | One conversation | Always |
+| **Semantic** | "Python is a language" — facts you just *know* | Vector DB (Chroma/Qdrant/Pinecone) | Persistent | Top-K per query |
+| **Episodic** | "Last time I debugged this, drawing helped" | Vector DB of episode records | Persistent | Top-K few-shots |
+| **Procedural** | "I know how to ride a bicycle" — muscle memory | System prompt / `CLAUDE.md` | Persistent | At startup, every turn |
+
+Each memory type has the same three-step lifecycle: **WRITE → STORE → USE.** What changes is *when* it's written, *what* schema it uses, and *how* it gets back into context.
+
+#### Semantic Memory — Facts & Knowledge
+
+> **Human analogy:** "Python is a programming language." You don't remember *where* you learned it — you just know it. Semantic memory holds durable, decontextualised facts the agent leans on without re-telling history.
+
+| Stage | What happens |
+|---|---|
+| **01 · WRITE** | A `memory_manager` reads the chat and pulls out facts, preferences, entities & relations. Hot-path (instant) or background (after-the-fact reflection). |
+| **02 · STORE** | Two patterns: **Collection** — many docs, vector-indexed, deduplicate over time. **Profile** — one schema-bound doc; new info overwrites the latest state. |
+| **03 · USE** | Similarity search ranked by relevance · recency · importance. Top-K facts injected into the system prompt before the LLM reasons. |
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    AGENT MEMORY TAXONOMY                         │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  SESSION MEMORY (Working Memory)                        │   │
-│  │  Scope: current conversation only                       │   │
-│  │  Storage: LangGraph AgentState (in-process dict)        │   │
-│  │  Access: immediate, O(1)                                │   │
-│  │  Example: current task, intermediate results            │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  EPISODIC MEMORY                                        │   │
-│  │  Scope: logs of past agent runs                         │   │
-│  │  Storage: PostgreSQL + embeddings                       │   │
-│  │  Access: vector similarity search                       │   │
-│  │  Example: "Last time I fixed auth errors, I did X"      │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  SEMANTIC MEMORY                                        │   │
-│  │  Scope: domain knowledge, facts, documentation          │   │
-│  │  Storage: vector database (Chroma, Qdrant, Pinecone)    │   │
-│  │  Access: similarity search by query                     │   │
-│  │  Example: API docs, codebase patterns, team norms       │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  PROCEDURAL MEMORY                                      │   │
-│  │  Scope: how-to knowledge, heuristics, workflows         │   │
-│  │  Storage: system prompt snippets, CLAUDE.md files       │   │
-│  │  Access: loaded at startup, retrieved by tag            │   │
-│  │  Example: "Always run tests before committing"          │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+"I work at Acme on the ML team — mostly NLP."
+     │ extract  ⟶  memory_manager
+     ▼
+Memory(content="User: ML engineer at Acme, NLP focus", importance=HIGH)
+     │ persist  ⟶  namespace: ("acme", "{user_id}", "facts")
+     ▼
+Next session  ⟶  similarity_search(query)  ⟶  top-K  ⟶  system prompt
+```
+
+#### Episodic Memory — Past Experiences
+
+> **Human analogy:** "Last time I debugged a recursion bug, drawing a tree on paper unstuck me." You replay *what worked before* — situation, reasoning, action, outcome. Experience-shaped few-shots for the agent.
+
+| Stage | What happens |
+|---|---|
+| **01 · WRITE** | After a successful run. Background reflection. Capture only runs the agent (or a critic) judges worth remembering. Failed runs stay out unless tagged. |
+| **02 · STORE** | **Episode schema:** `observation` (the situation) · `thoughts` (reasoning) · `action` (what was done) · `result` (why it worked). |
+| **03 · USE** | On a new task, similarity-match the situation; inject top-K episodes as in-context few-shots. The agent imitates the moves that worked last time. |
+
+```python
+Episode(
+    observation = "User stuck on recursion in binary tree traversal",
+    thoughts    = "Use a treehouse-village metaphor — concrete first",
+    action      = "Reframed problem; outlined 1.left 2.right 3.add-self",
+    result      = "User clicked. Worked because it tied logic to a picture.",
+)
+# stored in episodes collection · retrieved next time recursion comes up
+```
+
+#### Procedural Memory — How-To & System Behaviour
+
+> **Human analogy:** "I know how to ride a bicycle." Muscle memory. You don't recite the rules — you just *do* the right thing. For agents this is the system prompt and rules: identity, style, workflow, safety policy.
+
+| Stage | What happens |
+|---|---|
+| **01 · WRITE** | Seed with a hand-written system prompt. A *prompt optimiser* (`create_prompt_optimizer`) reflects on trajectories & user scores, proposes a sharpened prompt — meta-prompt or gradient-style. |
+| **02 · STORE** | One canonical system prompt (versioned, reviewable) *or* a collection of rule snippets indexed by situation — pulled in like skills when relevant. |
+| **03 · USE** | Always-on context. Sits at the top of every prompt — never trimmed. Refined through feedback loops, not per-turn search. |
+
+```
+v1: "You are a helpful assistant."
+        │
+        │ feedback: user_score = 0  ("show practical example, not theory")
+        ▼  optimizer.invoke({trajectories, prompt})
+v2: "You are a helpful assistant. For programming questions:
+       1. Open with a concrete code example
+       2. Defer theory unless asked
+       3. Adapt fast when the user redirects."
 ```
 
 #### Session Memory (Working Memory)
